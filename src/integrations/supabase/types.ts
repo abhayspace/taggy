@@ -270,6 +270,7 @@ export type Database = {
           age: number | null
           bio: string | null
           created_at: string | null
+          display_name: string | null
           id: string
           interests: string[] | null
           profile_picture_url: string | null
@@ -280,6 +281,7 @@ export type Database = {
           age?: number | null
           bio?: string | null
           created_at?: string | null
+          display_name?: string | null
           id: string
           interests?: string[] | null
           profile_picture_url?: string | null
@@ -290,6 +292,7 @@ export type Database = {
           age?: number | null
           bio?: string | null
           created_at?: string | null
+          display_name?: string | null
           id?: string
           interests?: string[] | null
           profile_picture_url?: string | null

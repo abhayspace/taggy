@@ -14,6 +14,7 @@ interface EditProfileDialogProps {
   onOpenChange: (open: boolean) => void;
   profile: {
     username: string;
+    display_name: string | null;
     bio: string | null;
     age: number | null;
     interests: string[] | null;
@@ -24,6 +25,7 @@ interface EditProfileDialogProps {
 
 export const EditProfileDialog = ({ open, onOpenChange, profile, onProfileUpdated }: EditProfileDialogProps) => {
   const [username, setUsername] = useState(profile.username);
+  const [displayName, setDisplayName] = useState(profile.display_name || "");
   const [bio, setBio] = useState(profile.bio || "");
   const [age, setAge] = useState(profile.age?.toString() || "");
   const [profilePictureUrl, setProfilePictureUrl] = useState(profile.profile_picture_url || "");
@@ -34,6 +36,7 @@ export const EditProfileDialog = ({ open, onOpenChange, profile, onProfileUpdate
 
   useEffect(() => {
     setUsername(profile.username);
+    setDisplayName(profile.display_name || "");
     setBio(profile.bio || "");
     setAge(profile.age?.toString() || "");
     setProfilePictureUrl(profile.profile_picture_url || "");
@@ -61,6 +64,7 @@ export const EditProfileDialog = ({ open, onOpenChange, profile, onProfileUpdate
         .from("profiles")
         .update({
           username: username.trim(),
+          display_name: displayName.trim() || null,
           bio: bio.trim() || null,
           age: age ? parseInt(age) : null,
           profile_picture_url: profilePictureUrl.trim() || null,
@@ -96,11 +100,22 @@ export const EditProfileDialog = ({ open, onOpenChange, profile, onProfileUpdate
         </DialogHeader>
         <div className="space-y-4 py-4">
           <div className="space-y-2">
-            <Label htmlFor="username">Username</Label>
+            <Label htmlFor="displayName">Display Name</Label>
+            <Input
+              id="displayName"
+              value={displayName}
+              onChange={(e) => setDisplayName(e.target.value)}
+              placeholder="Your name (shown on profile)"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="username">Username <span className="text-xs text-muted-foreground">(for login only)</span></Label>
             <Input
               id="username"
               value={username}
-              onChange={(e) => setUsername(e.target.value)}
+              disabled
+              className="bg-muted cursor-not-allowed"
             />
           </div>
 

@@ -21,6 +21,7 @@ interface Post {
   created_at: string;
   profiles: {
     username: string;
+    display_name: string | null;
     profile_picture_url: string | null;
   };
 }
@@ -32,6 +33,7 @@ interface Story {
   created_at: string;
   profiles: {
     username: string;
+    display_name: string | null;
     profile_picture_url: string | null;
   };
 }
@@ -76,7 +78,7 @@ const Feed = () => {
         .from('posts')
         .select(`
           *,
-          profiles:user_id (username, profile_picture_url)
+          profiles:user_id (username, display_name, profile_picture_url)
         `)
         .order('created_at', { ascending: false });
 
@@ -88,7 +90,7 @@ const Feed = () => {
         .from('stories')
         .select(`
           *,
-          profiles:user_id (username, profile_picture_url)
+          profiles:user_id (username, display_name, profile_picture_url)
         `)
         .gt('expires_at', new Date().toISOString())
         .order('created_at', { ascending: false });
@@ -190,11 +192,11 @@ const Feed = () => {
               <div className="relative ring-2 ring-gradient-accent ring-offset-2 ring-offset-background rounded-full p-1">
                 <Avatar className="w-16 h-16">
                   <AvatarImage src={story.profiles.profile_picture_url || defaultAvatar} />
-                  <AvatarFallback>{story.profiles.username[0].toUpperCase()}</AvatarFallback>
+                  <AvatarFallback>{(story.profiles.display_name || story.profiles.username)[0].toUpperCase()}</AvatarFallback>
                 </Avatar>
               </div>
               <span className="text-xs text-muted-foreground truncate max-w-[70px]">
-                {story.profiles.username}
+                {story.profiles.display_name || story.profiles.username}
               </span>
             </div>
           ))}
@@ -216,10 +218,10 @@ const Feed = () => {
               <div className="p-4 flex items-center gap-3">
                 <Avatar className="w-10 h-10">
                   <AvatarImage src={post.profiles.profile_picture_url || defaultAvatar} />
-                  <AvatarFallback>{post.profiles.username[0].toUpperCase()}</AvatarFallback>
+                  <AvatarFallback>{(post.profiles.display_name || post.profiles.username)[0].toUpperCase()}</AvatarFallback>
                 </Avatar>
                 <div>
-                  <p className="font-semibold">{post.profiles.username}</p>
+                  <p className="font-semibold">{post.profiles.display_name || post.profiles.username}</p>
                   <p className="text-xs text-muted-foreground">
                     {formatDistanceToNow(new Date(post.created_at), { addSuffix: true })}
                   </p>
@@ -269,7 +271,7 @@ const Feed = () => {
                 <p className="font-semibold mb-1">{post.likes_count} likes</p>
                 {post.caption && (
                   <p className="text-sm">
-                    <span className="font-semibold">{post.profiles.username}</span> {post.caption}
+                    <span className="font-semibold">{post.profiles.display_name || post.profiles.username}</span> {post.caption}
                   </p>
                 )}
                 <p className="text-sm text-muted-foreground mt-1 cursor-pointer">

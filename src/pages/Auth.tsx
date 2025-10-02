@@ -19,6 +19,7 @@ const Auth = () => {
   const [loading, setLoading] = useState(false);
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
+  const [displayName, setDisplayName] = useState("");
   const [bio, setBio] = useState("");
   const [age, setAge] = useState("");
   const [interests, setInterests] = useState<string[]>([]);
@@ -101,6 +102,7 @@ const Auth = () => {
         options: {
           data: {
             username,
+            display_name: displayName,
             bio,
             age: age ? parseInt(age) : null,
             interests: interests.join(","),
@@ -152,7 +154,7 @@ const Auth = () => {
         <form onSubmit={isLogin ? handleLogin : handleSignup} className="space-y-6">
           <div className="space-y-2">
             <Label htmlFor="username" className="text-foreground font-semibold">
-              Username
+              Username {!isLogin && <span className="text-xs text-muted-foreground">(for login)</span>}
             </Label>
             <Input
               id="username"
@@ -183,6 +185,20 @@ const Auth = () => {
 
           {!isLogin && (
             <>
+              <div className="space-y-2">
+                <Label htmlFor="displayName" className="text-foreground font-semibold">
+                  Display Name
+                </Label>
+                <Input
+                  id="displayName"
+                  type="text"
+                  placeholder="Your name (shown on profile)"
+                  value={displayName}
+                  onChange={(e) => setDisplayName(e.target.value)}
+                  className="rounded-full h-12 bg-background/50 border-2 border-primary/20 focus:border-primary transition-all"
+                  required
+                />
+              </div>
               <div className="space-y-2">
                 <Label className="text-foreground font-semibold">
                   Profile Picture (Optional)

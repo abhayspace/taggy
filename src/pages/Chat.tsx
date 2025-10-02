@@ -15,6 +15,7 @@ interface ChatData {
   other_user: {
     id: string;
     username: string;
+    display_name: string | null;
     profile_picture_url: string | null;
   };
   last_message: {
@@ -91,6 +92,7 @@ const Chat = () => {
             profiles:user_id (
               id,
               username,
+              display_name,
               profile_picture_url
             )
           `)
@@ -138,7 +140,8 @@ const Chat = () => {
   };
 
   const filteredChats = chats.filter(chat =>
-    chat.other_user.username.toLowerCase().includes(searchQuery.toLowerCase())
+    chat.other_user.username.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    chat.other_user.display_name?.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   if (loading) {
@@ -186,13 +189,13 @@ const Chat = () => {
                 <div className="relative">
                   <Avatar className="w-14 h-14">
                     <AvatarImage src={chat.other_user.profile_picture_url || defaultAvatar} />
-                    <AvatarFallback>{chat.other_user.username[0].toUpperCase()}</AvatarFallback>
+                    <AvatarFallback>{(chat.other_user.display_name || chat.other_user.username)[0].toUpperCase()}</AvatarFallback>
                   </Avatar>
                 </div>
 
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between mb-1">
-                    <h3 className="font-semibold truncate">{chat.other_user.username}</h3>
+                    <h3 className="font-semibold truncate">{chat.other_user.display_name || chat.other_user.username}</h3>
                     {chat.last_message && (
                       <span className="text-xs text-muted-foreground">
                         {formatDistanceToNow(new Date(chat.last_message.created_at), { addSuffix: true })}

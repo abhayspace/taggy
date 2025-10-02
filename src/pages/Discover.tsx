@@ -13,6 +13,7 @@ import defaultAvatar from "@/assets/default-avatar.png";
 interface Profile {
   id: string;
   username: string;
+  display_name: string | null;
   bio: string | null;
   age: number | null;
   profile_picture_url: string | null;
@@ -159,6 +160,7 @@ const Discover = () => {
 
   const filteredUsers = users.filter((user) =>
     user.username.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    user.display_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
     user.bio?.toLowerCase().includes(searchQuery.toLowerCase()) ||
     user.interests?.some(i => i.toLowerCase().includes(searchQuery.toLowerCase()))
   );
@@ -215,12 +217,13 @@ const Discover = () => {
                     <Avatar className="w-16 h-16 border-2 border-primary/20">
                       <AvatarImage src={user.profile_picture_url || defaultAvatar} />
                       <AvatarFallback className="bg-gradient-primary text-primary-foreground">
-                        {user.username[0].toUpperCase()}
+                        {(user.display_name || user.username)[0].toUpperCase()}
                       </AvatarFallback>
                     </Avatar>
 
                     <div className="flex-1 min-w-0">
-                      <h3 className="font-semibold text-lg mb-1">{user.username}</h3>
+                      <h3 className="font-semibold text-lg mb-1">{user.display_name || user.username}</h3>
+                      <p className="text-xs text-muted-foreground mb-1">@{user.username}</p>
                       {user.age && (
                         <p className="text-sm text-muted-foreground mb-1">{user.age} years old</p>
                       )}

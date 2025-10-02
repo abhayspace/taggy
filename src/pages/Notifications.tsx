@@ -15,6 +15,7 @@ interface FriendRequest {
   created_at: string;
   sender: {
     username: string;
+    display_name: string | null;
     profile_picture_url: string | null;
     bio: string | null;
   };
@@ -69,6 +70,7 @@ const Notifications = () => {
           created_at,
           sender:profiles!sender_id (
             username,
+            display_name,
             profile_picture_url,
             bio
           )
@@ -184,13 +186,13 @@ const Notifications = () => {
                   <Avatar className="w-16 h-16 border-2 border-primary/20">
                     <AvatarImage src={request.sender.profile_picture_url || defaultAvatar} />
                     <AvatarFallback className="bg-gradient-primary text-primary-foreground">
-                      {request.sender.username[0].toUpperCase()}
+                      {(request.sender.display_name || request.sender.username)[0].toUpperCase()}
                     </AvatarFallback>
                   </Avatar>
 
                   <div className="flex-1 min-w-0">
                     <h3 className="font-semibold text-lg mb-1">
-                      {request.sender.username}
+                      {request.sender.display_name || request.sender.username}
                     </h3>
                     <p className="text-sm text-muted-foreground">
                       Wants to be your friend

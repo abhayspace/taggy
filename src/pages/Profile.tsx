@@ -13,6 +13,7 @@ import { EditProfileDialog } from "@/components/EditProfileDialog";
 interface Profile {
   id: string;
   username: string;
+  display_name: string | null;
   bio: string | null;
   age: number | null;
   profile_picture_url: string | null;
@@ -154,7 +155,8 @@ const Profile = () => {
 
         {/* Username and Bio */}
         <div className="mb-6">
-          <h1 className="text-2xl font-bold mb-1">{profile.username}</h1>
+          <h1 className="text-2xl font-bold mb-1">{profile.display_name || profile.username}</h1>
+          <p className="text-sm text-muted-foreground mb-1">@{profile.username}</p>
           {profile.age && (
             <p className="text-sm text-muted-foreground mb-1">{profile.age} years old</p>
           )}
