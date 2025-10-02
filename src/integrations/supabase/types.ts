@@ -464,6 +464,7 @@ export type Database = {
           id: string
           image_url: string | null
           likes_count: number
+          music_url: string | null
           updated_at: string
           user_id: string
         }
@@ -474,6 +475,7 @@ export type Database = {
           id?: string
           image_url?: string | null
           likes_count?: number
+          music_url?: string | null
           updated_at?: string
           user_id: string
         }
@@ -484,6 +486,7 @@ export type Database = {
           id?: string
           image_url?: string | null
           likes_count?: number
+          music_url?: string | null
           updated_at?: string
           user_id?: string
         }
@@ -573,6 +576,7 @@ export type Database = {
           partner_id: string
           proposed_at: string
           responded_at: string | null
+          secret_code: string | null
           status: string | null
           updated_at: string
           user_id: string
@@ -584,6 +588,7 @@ export type Database = {
           partner_id: string
           proposed_at?: string
           responded_at?: string | null
+          secret_code?: string | null
           status?: string | null
           updated_at?: string
           user_id: string
@@ -595,6 +600,7 @@ export type Database = {
           partner_id?: string
           proposed_at?: string
           responded_at?: string | null
+          secret_code?: string | null
           status?: string | null
           updated_at?: string
           user_id?: string

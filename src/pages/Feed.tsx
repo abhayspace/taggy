@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Heart, MessageCircle, Send, Plus, Loader2 } from "lucide-react";
+import { Heart, MessageCircle, Send, Plus, Loader2, UserPlus, FileText } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
@@ -205,14 +205,15 @@ const Feed = () => {
 
   const handleShare = async (post: Post) => {
     try {
+      const postUrl = `${window.location.origin}/feed?post=${post.id}`;
       if (navigator.share) {
         await navigator.share({
           title: `Post by ${post.profiles.display_name || post.profiles.username}`,
-          text: post.caption || "",
-          url: window.location.href,
+          text: post.caption || "Check out this post!",
+          url: postUrl,
         });
       } else {
-        await navigator.clipboard.writeText(window.location.href);
+        await navigator.clipboard.writeText(postUrl);
         toast({
           title: "Link copied",
           description: "Post link copied to clipboard",
@@ -305,10 +306,22 @@ const Feed = () => {
       {/* Posts Feed */}
       <div className="flex-1 overflow-auto px-4 pb-24">
         {posts.length === 0 ? (
-          <div className="text-center py-12">
-            <MessageCircle className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
-            <p className="text-muted-foreground">No posts yet</p>
-            <p className="text-sm text-muted-foreground">Be the first to share something!</p>
+          <div className="text-center py-12 space-y-6">
+            <div className="bg-gradient-to-br from-primary/10 to-accent/10 w-24 h-24 rounded-full flex items-center justify-center mx-auto">
+              <FileText className="w-12 h-12 text-primary" />
+            </div>
+            <div>
+              <p className="text-lg font-semibold text-muted-foreground mb-2">No posts yet</p>
+              <p className="text-sm text-muted-foreground">Be the first to share something!</p>
+              <p className="text-sm text-muted-foreground">Add friends to see their posts</p>
+            </div>
+            <Button
+              onClick={() => navigate("/discover")}
+              className="rounded-full bg-gradient-secondary hover:scale-105 transition-transform"
+            >
+              <UserPlus className="w-4 h-4 mr-2" />
+              Add Friends
+            </Button>
           </div>
         ) : (
           posts.map((post) => (

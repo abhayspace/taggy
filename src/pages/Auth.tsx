@@ -22,6 +22,7 @@ const Auth = () => {
   const [displayName, setDisplayName] = useState("");
   const [bio, setBio] = useState("");
   const [age, setAge] = useState("");
+  const [gender, setGender] = useState("");
   const [interests, setInterests] = useState<string[]>([]);
   const [newInterest, setNewInterest] = useState("");
   const [profilePicture, setProfilePicture] = useState<File | null>(null);
@@ -105,6 +106,7 @@ const Auth = () => {
             display_name: displayName,
             bio,
             age: age ? parseInt(age) : null,
+            gender: gender || null,
             interests: interests.join(","),
           },
           emailRedirectTo: `${window.location.origin}/feed`,
@@ -242,6 +244,23 @@ const Auth = () => {
                   min={13}
                   max={19}
                 />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="gender" className="text-foreground font-semibold">
+                  Gender <span className="text-destructive">*</span>
+                </Label>
+                <select
+                  id="gender"
+                  value={gender}
+                  onChange={(e) => setGender(e.target.value)}
+                  className="w-full rounded-full h-12 bg-background/50 border-2 border-primary/20 focus:border-primary transition-all px-4"
+                  required
+                >
+                  <option value="">Select your gender</option>
+                  <option value="male">Male</option>
+                  <option value="female">Female</option>
+                </select>
               </div>
 
               <div className="space-y-2">

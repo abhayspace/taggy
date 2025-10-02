@@ -17,6 +17,7 @@ import { RelationshipStatusBadge } from "@/components/RelationshipStatusBadge";
 import { MilestonesBadges } from "@/components/MilestonesBadges";
 import { MutualFriendsSuggestions } from "@/components/MutualFriendsSuggestions";
 import { RelationshipPrivacyToggle } from "@/components/RelationshipPrivacyToggle";
+import { RelationshipSecretCodeDialog } from "@/components/RelationshipSecretCodeDialog";
 
 interface Relationship {
   id: string;
@@ -28,6 +29,7 @@ interface Relationship {
   responded_at: string | null;
   status: string;
   is_public: boolean;
+  secret_code: string | null;
   partner_profile?: {
     display_name: string | null;
     username: string;
@@ -75,6 +77,7 @@ const Profile = () => {
   const [posts, setPosts] = useState<Post[]>([]);
   const [showAddPost, setShowAddPost] = useState(false);
   const [milestones, setMilestones] = useState<Milestone[]>([]);
+  const [showSecretCode, setShowSecretCode] = useState(false);
 
   useEffect(() => {
     loadProfile();
@@ -373,11 +376,21 @@ const Profile = () => {
               isPublic={relationship.is_public}
             />
             {relationship.user_id === profile.id && (
-              <RelationshipPrivacyToggle
-                relationshipId={relationship.id}
-                initialIsPublic={relationship.is_public}
-                onUpdate={loadRelationship}
-              />
+              <>
+                <RelationshipPrivacyToggle
+                  relationshipId={relationship.id}
+                  initialIsPublic={relationship.is_public}
+                  onUpdate={loadRelationship}
+                />
+                <Button
+                  onClick={() => setShowSecretCode(true)}
+                  variant="outline"
+                  className="w-full rounded-full"
+                  size="sm"
+                >
+                  Manage Secret Code
+                </Button>
+              </>
             )}
           </div>
         )}
@@ -582,6 +595,13 @@ const Profile = () => {
             open={showAddPost}
             onOpenChange={setShowAddPost}
             onPostAdded={loadPosts}
+          />
+          <RelationshipSecretCodeDialog
+            open={showSecretCode}
+            onOpenChange={setShowSecretCode}
+            relationship={relationship}
+            currentUserId={profile.id}
+            onRelationshipUpdated={loadRelationship}
           />
         </>
       )}
