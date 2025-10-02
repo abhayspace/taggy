@@ -21,15 +21,30 @@ interface FriendRequest {
   };
 }
 
+interface RelationshipProposal {
+  id: string;
+  user_id: string;
+  partner_id: string;
+  status: string;
+  proposed_at: string;
+  user_profile: {
+    username: string;
+    display_name: string | null;
+    profile_picture_url: string | null;
+  };
+}
+
 const Notifications = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
   const [requests, setRequests] = useState<FriendRequest[]>([]);
+  const [proposals, setProposals] = useState<RelationshipProposal[]>([]);
   const [loading, setLoading] = useState(true);
   const [processingId, setProcessingId] = useState<string | null>(null);
 
   useEffect(() => {
     loadFriendRequests();
+    loadRelationshipProposals();
 
     // Set up realtime subscription for new friend requests
     const channel = supabase
@@ -90,6 +105,35 @@ const Notifications = () => {
       });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadRelationshipProposals = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data, error } = await supabase
+        .from('relationships')
+        .select(`
+          id,
+          user_id,
+          partner_id,
+          status,
+          proposed_at,
+          user_profile:profiles!relationships_user_id_fkey (
+            username,
+            display_name,
+            profile_picture_url
+          )
+        `)
+        .eq('partner_id', user.id)
+        .eq('status', 'pending');
+
+      if (error) throw error;
+      setProposals(data || []);
+    } catch (error: any) {
+      console.error('Error loading proposals:', error);
     }
   };
 

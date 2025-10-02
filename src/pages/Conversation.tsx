@@ -13,6 +13,7 @@ import { SendGiftDialog } from "@/components/SendGiftDialog";
 import { useAgoraCalls } from "@/hooks/useAgoraCalls";
 import { IncomingCallPopup } from "@/components/IncomingCallPopup";
 import { CallScreen } from "@/components/CallScreen";
+import { BlockMuteMenu } from "@/components/BlockMuteMenu";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -86,6 +87,8 @@ const Conversation = () => {
   } = useAgoraCalls(currentUserId);
 
   const [incomingCallUserInfo, setIncomingCallUserInfo] = useState<OtherUser | null>(null);
+  const [isBlocked, setIsBlocked] = useState(false);
+  const [isMuted, setIsMuted] = useState(false);
 
   // Load caller info when incoming call arrives
   useEffect(() => {
@@ -112,6 +115,7 @@ const Conversation = () => {
   useEffect(() => {
     loadConversation();
     loadRelationshipStatus();
+    loadBlockMuteStatus();
 
     // Set up realtime subscription for new messages
     const channel = supabase
@@ -239,6 +243,35 @@ const Conversation = () => {
       }
     } catch (error: any) {
       console.error('Error loading relationship:', error);
+    }
+  };
+
+  const loadBlockMuteStatus = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user || !otherUser) return;
+
+      // Check if blocked
+      const { data: blockData } = await supabase
+        .from('blocked_users')
+        .select('id')
+        .eq('user_id', user.id)
+        .eq('blocked_user_id', otherUser.id)
+        .maybeSingle();
+
+      setIsBlocked(!!blockData);
+
+      // Check if muted
+      const { data: muteData } = await supabase
+        .from('muted_users')
+        .select('id')
+        .eq('user_id', user.id)
+        .eq('muted_user_id', otherUser.id)
+        .maybeSingle();
+
+      setIsMuted(!!muteData);
+    } catch (error: any) {
+      console.error('Error loading block/mute status:', error);
     }
   };
 
@@ -406,6 +439,15 @@ const Conversation = () => {
             >
               <Gift className="w-4 h-4" />
             </Button>
+
+            {/* Block/Mute Menu */}
+            <BlockMuteMenu
+              userId={otherUser.id}
+              username={otherUser.username}
+              isBlocked={isBlocked}
+              isMuted={isMuted}
+              onStatusChange={loadBlockMuteStatus}
+            />
 
             {/* Relationship Actions */}
             {canPropose && !relationship && (

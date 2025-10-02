@@ -27,6 +27,7 @@ interface Post {
     display_name: string | null;
     profile_picture_url: string | null;
   };
+  has_relationship?: boolean;
 }
 
 interface Story {
@@ -55,6 +56,7 @@ const Feed = () => {
   const [selectedPostForComments, setSelectedPostForComments] = useState<string | null>(null);
   const [storyViewerOpen, setStoryViewerOpen] = useState(false);
   const [storyIndex, setStoryIndex] = useState(0);
+  const [usersInRelationships, setUsersInRelationships] = useState<Set<string>>(new Set());
   
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -139,6 +141,21 @@ const Feed = () => {
 
       if (likesError) throw likesError;
       setLikedPosts(likesData.map(like => like.post_id));
+
+      // Load users in relationships
+      const { data: relationshipsData } = await supabase
+        .from('relationships')
+        .select('user_id, partner_id')
+        .eq('status', 'accepted');
+
+      if (relationshipsData) {
+        const usersInRel = new Set<string>();
+        relationshipsData.forEach(rel => {
+          usersInRel.add(rel.user_id);
+          usersInRel.add(rel.partner_id);
+        });
+        setUsersInRelationships(usersInRel);
+      }
 
     } catch (error: any) {
       toast({
@@ -298,10 +315,17 @@ const Feed = () => {
             <Card key={post.id} className="mb-6 rounded-3xl overflow-hidden animate-fade-in">
               {/* Post Header */}
               <div className="p-4 flex items-center gap-3">
-                <Avatar className="w-10 h-10">
-                  <AvatarImage src={post.profiles.profile_picture_url || defaultAvatar} />
-                  <AvatarFallback>{(post.profiles.display_name || post.profiles.username)[0].toUpperCase()}</AvatarFallback>
-                </Avatar>
+                <div className="relative">
+                  <Avatar className="w-10 h-10">
+                    <AvatarImage src={post.profiles.profile_picture_url || defaultAvatar} />
+                    <AvatarFallback>{(post.profiles.display_name || post.profiles.username)[0].toUpperCase()}</AvatarFallback>
+                  </Avatar>
+                  {usersInRelationships.has(post.user_id) && (
+                    <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-gradient-to-br from-pink-500 to-red-500 rounded-full flex items-center justify-center border-2 border-background shadow-md">
+                      <Heart className="w-3 h-3 text-white fill-white" />
+                    </div>
+                  )}
+                </div>
                 <div>
                   <p className="font-semibold">{post.profiles.display_name || post.profiles.username}</p>
                   <p className="text-xs text-muted-foreground">
@@ -326,13 +350,13 @@ const Feed = () => {
                     variant="ghost"
                     size="icon"
                     onClick={() => toggleLike(post.id)}
-                    className="hover:scale-110 transition-transform"
+                    className="hover:scale-110 transition-transform group"
                   >
                     <Heart
-                      className={`w-6 h-6 ${
+                      className={`w-6 h-6 transition-all ${
                         likedPosts.includes(post.id)
-                          ? "fill-destructive text-destructive"
-                          : ""
+                          ? "fill-red-500 text-red-500 animate-scale-in"
+                          : "group-hover:scale-110"
                       }`}
                     />
                   </Button>

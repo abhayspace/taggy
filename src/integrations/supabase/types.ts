@@ -14,6 +14,42 @@ export type Database = {
   }
   public: {
     Tables: {
+      blocked_users: {
+        Row: {
+          blocked_user_id: string
+          created_at: string | null
+          id: string
+          user_id: string
+        }
+        Insert: {
+          blocked_user_id: string
+          created_at?: string | null
+          id?: string
+          user_id: string
+        }
+        Update: {
+          blocked_user_id?: string
+          created_at?: string | null
+          id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "blocked_users_blocked_user_id_fkey"
+            columns: ["blocked_user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "blocked_users_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       calls: {
         Row: {
           call_type: string
@@ -262,6 +298,42 @@ export type Database = {
           },
         ]
       }
+      muted_users: {
+        Row: {
+          created_at: string | null
+          id: string
+          muted_user_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          muted_user_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          muted_user_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "muted_users_muted_user_id_fkey"
+            columns: ["muted_user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "muted_users_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       point_transactions: {
         Row: {
           action: string
@@ -437,35 +509,85 @@ export type Database = {
         }
         Relationships: []
       }
+      relationship_milestones: {
+        Row: {
+          achieved_at: string | null
+          id: string
+          milestone_type: string
+          user_id: string
+        }
+        Insert: {
+          achieved_at?: string | null
+          id?: string
+          milestone_type: string
+          user_id: string
+        }
+        Update: {
+          achieved_at?: string | null
+          id?: string
+          milestone_type?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "relationship_milestones_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       relationships: {
         Row: {
           created_at: string
           id: string
+          is_public: boolean | null
           partner_id: string
           proposed_at: string
           responded_at: string | null
+          status: string | null
           updated_at: string
           user_id: string
         }
         Insert: {
           created_at?: string
           id?: string
+          is_public?: boolean | null
           partner_id: string
           proposed_at?: string
           responded_at?: string | null
+          status?: string | null
           updated_at?: string
           user_id: string
         }
         Update: {
           created_at?: string
           id?: string
+          is_public?: boolean | null
           partner_id?: string
           proposed_at?: string
           responded_at?: string | null
+          status?: string | null
           updated_at?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "relationships_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "relationships_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       stories: {
         Row: {
@@ -629,6 +751,10 @@ export type Database = {
     Functions: {
       accept_friend_request: {
         Args: { request_id: string }
+        Returns: undefined
+      }
+      award_milestone: {
+        Args: { _milestone_type: string; _user_id: string }
         Returns: undefined
       }
       award_points: {

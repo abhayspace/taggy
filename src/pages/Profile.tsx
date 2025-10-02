@@ -13,6 +13,10 @@ import { FriendsList } from "@/components/FriendsList";
 import { SettingsDialog } from "@/components/SettingsDialog";
 import { AddPostDialog } from "@/components/AddPostDialog";
 import { GiftCollectionTab } from "@/components/GiftCollectionTab";
+import { RelationshipStatusBadge } from "@/components/RelationshipStatusBadge";
+import { MilestonesBadges } from "@/components/MilestonesBadges";
+import { MutualFriendsSuggestions } from "@/components/MutualFriendsSuggestions";
+import { RelationshipPrivacyToggle } from "@/components/RelationshipPrivacyToggle";
 
 interface Relationship {
   id: string;
@@ -22,10 +26,18 @@ interface Relationship {
   updated_at: string;
   proposed_at: string;
   responded_at: string | null;
+  status: string;
+  is_public: boolean;
   partner_profile?: {
     display_name: string | null;
     username: string;
+    profile_picture_url: string | null;
   };
+}
+
+interface Milestone {
+  milestone_type: string;
+  achieved_at: string;
 }
 
 interface Profile {
@@ -61,6 +73,7 @@ const Profile = () => {
   const [relationship, setRelationship] = useState<Relationship | null>(null);
   const [posts, setPosts] = useState<Post[]>([]);
   const [showAddPost, setShowAddPost] = useState(false);
+  const [milestones, setMilestones] = useState<Milestone[]>([]);
 
   useEffect(() => {
     loadProfile();
@@ -81,6 +94,7 @@ const Profile = () => {
     loadFriendsCount();
     loadRelationship();
     loadPosts();
+    loadMilestones();
   }, [profile]);
 
   const loadFriendsCount = async () => {
@@ -136,11 +150,11 @@ const Profile = () => {
         .from('relationships')
         .select(`
           *,
-          partner_profile:profiles!relationships_partner_id_fkey(display_name, username),
-          user_profile:profiles!relationships_user_id_fkey(display_name, username)
+          partner_profile:profiles!relationships_partner_id_fkey(display_name, username, profile_picture_url),
+          user_profile:profiles!relationships_user_id_fkey(display_name, username, profile_picture_url)
         `)
         .or(`user_id.eq.${profile.id},partner_id.eq.${profile.id}`)
-        .not('responded_at', 'is', null)
+        .eq('status', 'accepted')
         .maybeSingle();
 
       if (relationshipData) {
@@ -155,6 +169,23 @@ const Profile = () => {
       }
     } catch (error: any) {
       console.error('Error loading relationship:', error);
+    }
+  };
+
+  const loadMilestones = async () => {
+    if (!profile) return;
+
+    try {
+      const { data, error } = await supabase
+        .from('relationship_milestones')
+        .select('*')
+        .eq('user_id', profile.id)
+        .order('achieved_at', { ascending: false });
+
+      if (error) throw error;
+      setMilestones(data || []);
+    } catch (error: any) {
+      console.error('Error loading milestones:', error);
     }
   };
 
@@ -301,12 +332,6 @@ const Profile = () => {
               {profile.gender && <span className="capitalize">{profile.gender.replace('_', ' ')}</span>}
             </div>
 
-            {/* Relationship Status */}
-            {relationship && (
-              <Badge className="bg-gradient-to-r from-primary to-secondary text-primary-foreground px-3 py-1 text-xs rounded-full mt-2">
-                💕 In a relationship with {relationship.partner_profile?.display_name || relationship.partner_profile?.username}
-              </Badge>
-            )}
 
             {/* Interests */}
             {profile.interests && profile.interests.length > 0 && (
@@ -323,6 +348,35 @@ const Profile = () => {
               </div>
             )}
           </div>
+        </div>
+
+        {/* Enhanced Relationship Status */}
+        {relationship && relationship.status === 'accepted' && (
+          <div className="space-y-4 animate-fade-in">
+            <RelationshipStatusBadge
+              partnerInfo={relationship.partner_profile || null}
+              isPublic={relationship.is_public}
+            />
+            {relationship.user_id === profile.id && (
+              <RelationshipPrivacyToggle
+                relationshipId={relationship.id}
+                initialIsPublic={relationship.is_public}
+                onUpdate={loadRelationship}
+              />
+            )}
+          </div>
+        )}
+
+        {/* Milestones */}
+        {milestones.length > 0 && (
+          <div className="animate-fade-in" style={{ animationDelay: '100ms' }}>
+            <MilestonesBadges milestones={milestones} />
+          </div>
+        )}
+
+        {/* Mutual Friends Suggestions */}
+        <div className="animate-fade-in" style={{ animationDelay: '150ms' }}>
+          <MutualFriendsSuggestions />
         </div>
 
         {/* Stats Cards */}
