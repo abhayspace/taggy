@@ -90,9 +90,9 @@ export const PointsDisplay = () => {
   };
 
   return (
-    <div className="flex items-center gap-2 bg-gradient-to-r from-yellow-500/20 to-orange-500/20 backdrop-blur-sm px-4 py-2 rounded-full border border-yellow-500/30 animate-pulse">
-      <Coins className="w-5 h-5 text-yellow-500" />
-      <span className="font-bold text-lg bg-gradient-to-r from-yellow-500 to-orange-500 bg-clip-text text-transparent">
+    <div className="flex items-center gap-1">
+      <Coins className="w-4 h-4 text-foreground" />
+      <span className="font-semibold text-sm text-foreground">
         {points.toLocaleString()}
       </span>
     </div>

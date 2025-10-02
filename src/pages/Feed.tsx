@@ -12,7 +12,6 @@ import { AddStoryDialog } from "@/components/AddStoryDialog";
 import { PostCommentsDialog } from "@/components/PostCommentsDialog";
 import { StoryViewer } from "@/components/StoryViewer";
 import { PointsDisplay } from "@/components/PointsDisplay";
-import { GiftLeaderboard } from "@/components/GiftLeaderboard";
 import { formatDistanceToNow } from "date-fns";
 
 interface Post {
@@ -53,7 +52,7 @@ const Feed = () => {
   const [selectedPostForComments, setSelectedPostForComments] = useState<string | null>(null);
   const [storyViewerOpen, setStoryViewerOpen] = useState(false);
   const [storyIndex, setStoryIndex] = useState(0);
-  const [showLeaderboard, setShowLeaderboard] = useState(false);
+  
   const { toast } = useToast();
   const navigate = useNavigate();
 
@@ -193,20 +192,10 @@ const Feed = () => {
     <div className="h-full flex flex-col pb-20">
       {/* Header with Points */}
       <div className="flex items-center justify-between px-4 py-3 bg-background/80 backdrop-blur-sm sticky top-0 z-20 border-b">
-        <h1 className="text-xl font-bold bg-gradient-to-r from-pink-500 via-purple-500 to-blue-500 bg-clip-text text-transparent">
-          Feed
+        <h1 className="text-xl font-bold">
+          TagMate
         </h1>
-        <div className="flex items-center gap-2">
-          <Button
-            onClick={() => setShowLeaderboard(true)}
-            variant="ghost"
-            size="sm"
-            className="text-xs"
-          >
-            🏆 Leaderboard
-          </Button>
-          <PointsDisplay />
-        </div>
+        <PointsDisplay />
       </div>
 
       {/* Stories */}
@@ -372,10 +361,6 @@ const Feed = () => {
           initialIndex={storyIndex}
         />
       )}
-      <GiftLeaderboard
-        open={showLeaderboard}
-        onOpenChange={setShowLeaderboard}
-      />
     </div>
   );
 };
