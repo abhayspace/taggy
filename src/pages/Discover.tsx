@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { Search, UserPlus, UserCheck, Loader2 } from "lucide-react";
+import { Search, UserPlus, UserCheck, Loader2, Heart, Star, Sparkles } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
@@ -49,7 +49,6 @@ const Discover = () => {
 
       setCurrentUserId(user.id);
 
-      // Load all profiles except current user
       const { data: profiles, error: profilesError } = await supabase
         .from('profiles')
         .select('*')
@@ -58,7 +57,6 @@ const Discover = () => {
       if (profilesError) throw profilesError;
       setUsers(profiles || []);
 
-      // Load friend requests
       const { data: requests, error: requestsError } = await supabase
         .from('friend_requests')
         .select('*')
@@ -73,7 +71,6 @@ const Discover = () => {
       });
       setFriendRequests(requestsMap);
 
-      // Load friends
       const { data: friendsData, error: friendsError } = await supabase
         .from('friends')
         .select('friend_id')
@@ -117,7 +114,7 @@ const Discover = () => {
       });
 
       toast({
-        title: "Friend request sent!",
+        title: "✨ Friend request sent!",
         description: "Waiting for them to accept.",
       });
     } catch (error: any) {
@@ -165,43 +162,49 @@ const Discover = () => {
 
   if (loading) {
     return (
-      <div className="h-screen flex items-center justify-center pb-20">
-        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      <div className="h-screen flex items-center justify-center bg-gradient-rainbow">
+        <Loader2 className="w-12 h-12 animate-spin text-primary" />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen pb-20 bg-background">
+    <div className="min-h-screen pb-20 bg-gradient-to-br from-background via-accent/5 to-primary/5">
       <div className="p-6 space-y-6">
         {/* Header */}
-        <div className="space-y-2">
-          <h1 className="text-3xl font-bold bg-gradient-primary bg-clip-text text-transparent">
-            Discover
-          </h1>
-          <p className="text-muted-foreground">Find friends who share your interests</p>
+        <div className="bg-gradient-accent p-6 rounded-3xl shadow-glow-accent card-3d animate-fade-in">
+          <div className="flex items-center gap-3 mb-2">
+            <Sparkles className="w-10 h-10 text-accent-foreground animate-bounce-subtle" />
+            <h1 className="text-4xl font-extrabold text-accent-foreground">
+              Discover
+            </h1>
+            <Star className="w-8 h-8 text-accent-foreground animate-bounce-subtle" fill="currentColor" />
+          </div>
+          <p className="text-accent-foreground/90 font-semibold text-lg">Find friends who share your vibes ✨</p>
         </div>
 
         {/* Search */}
-        <div className="relative">
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+        <div className="relative animate-fade-in" style={{ animationDelay: '100ms' }}>
+          <Search className="absolute left-5 top-1/2 -translate-y-1/2 w-6 h-6 text-muted-foreground" />
           <Input
             type="text"
-            placeholder="Search users by name or interests..."
+            placeholder="Search by name or interests..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-12 h-12 rounded-full bg-card/50 border-2 border-primary/20 focus:border-primary transition-all"
+            className="pl-14 h-14 rounded-3xl bg-card border-3 border-primary/30 focus:border-primary transition-all shadow-glow-primary text-lg"
           />
         </div>
 
         {/* Users List */}
         <div className="space-y-4">
           {filteredUsers.length === 0 ? (
-            <Card className="p-8 text-center rounded-2xl bg-card/50">
-              <p className="text-muted-foreground">No users found</p>
+            <Card className="p-12 text-center rounded-3xl card-3d border-3 border-primary/20 animate-fade-in">
+              <Sparkles className="w-16 h-16 text-primary mx-auto mb-4 animate-bounce-subtle" />
+              <p className="text-foreground font-bold text-xl">No users found</p>
+              <p className="text-muted-foreground">Try searching for something else!</p>
             </Card>
           ) : (
-            filteredUsers.map((user) => {
+            filteredUsers.map((user, index) => {
               const isFriend = friends.has(user.id);
               const request = friendRequests[user.id];
               const hasPendingRequest = request?.status === 'pending';
@@ -209,41 +212,43 @@ const Discover = () => {
               return (
                 <Card
                   key={user.id}
-                  className="p-4 rounded-2xl bg-card/50 backdrop-blur-sm hover:shadow-glow-primary transition-all animate-fade-in"
+                  className="p-5 rounded-3xl card-3d border-3 border-accent/20 shadow-glow-rainbow hover:scale-[1.02] transition-all animate-fade-in"
+                  style={{ animationDelay: `${index * 50}ms` }}
                 >
                   <div className="flex items-start gap-4">
-                    <Avatar className="w-16 h-16 border-2 border-primary/20">
+                    <Avatar className="w-20 h-20 border-4 border-primary/40 shadow-glow-primary">
                       <AvatarImage src={user.profile_picture_url || defaultAvatar} />
-                      <AvatarFallback className="bg-gradient-primary text-primary-foreground">
+                      <AvatarFallback className="bg-gradient-primary text-primary-foreground font-bold text-2xl">
                         {user.username[0].toUpperCase()}
                       </AvatarFallback>
                     </Avatar>
 
                     <div className="flex-1 min-w-0">
-                      <h3 className="font-semibold text-lg mb-1">{user.username}</h3>
+                      <h3 className="font-extrabold text-xl mb-1">{user.username}</h3>
                       {user.age && (
-                        <p className="text-sm text-muted-foreground mb-1">{user.age} years old</p>
+                        <p className="text-base text-muted-foreground mb-1 font-semibold">🎂 {user.age} years old</p>
                       )}
                       {user.bio && (
-                        <p className="text-sm text-muted-foreground mb-2 line-clamp-2">
+                        <p className="text-base text-muted-foreground mb-3 line-clamp-2">
                           {user.bio}
                         </p>
                       )}
 
                       {/* Interests */}
                       {user.interests && user.interests.length > 0 && (
-                        <div className="flex flex-wrap gap-2 mb-3">
-                          {user.interests.slice(0, 3).map((interest) => (
+                        <div className="flex flex-wrap gap-2 mb-4">
+                          {user.interests.slice(0, 3).map((interest, i) => (
                             <Badge
                               key={interest}
-                              className="bg-gradient-accent text-accent-foreground rounded-full text-xs"
+                              className="bg-gradient-primary text-primary-foreground rounded-3xl text-sm px-3 py-1 font-bold shadow-glow-primary animate-scale-in"
+                              style={{ animationDelay: `${i * 50}ms` }}
                             >
                               {interest}
                             </Badge>
                           ))}
                           {user.interests.length > 3 && (
-                            <Badge className="bg-muted text-muted-foreground rounded-full text-xs">
-                              +{user.interests.length - 3}
+                            <Badge className="bg-gradient-secondary text-secondary-foreground rounded-3xl text-sm px-3 py-1 font-bold">
+                              +{user.interests.length - 3} more
                             </Badge>
                           )}
                         </div>
@@ -253,26 +258,25 @@ const Discover = () => {
                       {isFriend ? (
                         <Button
                           disabled
-                          className="rounded-full bg-gradient-secondary"
+                          className="rounded-3xl bg-gradient-secondary shadow-glow-secondary font-bold"
                         >
-                          <UserCheck className="w-4 h-4 mr-2" />
-                          Friends
+                          <UserCheck className="w-5 h-5 mr-2" />
+                          Friends ✨
                         </Button>
                       ) : hasPendingRequest ? (
                         <Button
                           onClick={() => cancelFriendRequest(user.id)}
-                          variant="outline"
-                          className="rounded-full"
+                          className="rounded-3xl bg-gradient-accent hover:scale-105 transition-all font-bold"
                         >
-                          Request Sent
+                          Request Sent 📨
                         </Button>
                       ) : (
                         <Button
                           onClick={() => sendFriendRequest(user.id)}
-                          className="rounded-full bg-gradient-primary hover:scale-105 transition-transform"
+                          className="rounded-3xl bg-gradient-rainbow hover:scale-105 shadow-3d hover:shadow-3d-hover transition-all font-bold"
                         >
-                          <UserPlus className="w-4 h-4 mr-2" />
-                          Add Friend
+                          <UserPlus className="w-5 h-5 mr-2" />
+                          Add Friend 🎉
                         </Button>
                       )}
                     </div>
@@ -282,6 +286,14 @@ const Discover = () => {
             })
           )}
         </div>
+      </div>
+
+      {/* Floating Decorative Elements */}
+      <div className="fixed top-24 left-8 w-12 h-12 opacity-20 pointer-events-none">
+        <Heart className="w-full h-full text-primary floating-hearts" fill="currentColor" />
+      </div>
+      <div className="fixed bottom-32 right-8 w-10 h-10 opacity-20 pointer-events-none">
+        <Star className="w-full h-full text-accent floating-stars" fill="currentColor" />
       </div>
     </div>
   );
