@@ -304,6 +304,39 @@ export type Database = {
         }
         Relationships: []
       }
+      relationships: {
+        Row: {
+          created_at: string
+          id: string
+          partner_id: string
+          proposed_at: string
+          responded_at: string | null
+          status: Database["public"]["Enums"]["relationship_status"]
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          partner_id: string
+          proposed_at?: string
+          responded_at?: string | null
+          status?: Database["public"]["Enums"]["relationship_status"]
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          partner_id?: string
+          proposed_at?: string
+          responded_at?: string | null
+          status?: Database["public"]["Enums"]["relationship_status"]
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       stories: {
         Row: {
           created_at: string
@@ -345,6 +378,10 @@ export type Database = {
         Args: { request_id: string }
         Returns: undefined
       }
+      can_propose_to: {
+        Args: { _partner_id: string }
+        Returns: boolean
+      }
       can_view_post: {
         Args: { _post_user_id: string }
         Returns: boolean
@@ -359,7 +396,7 @@ export type Database = {
       }
     }
     Enums: {
-      [_ in never]: never
+      relationship_status: "pending" | "accepted" | "rejected"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -486,6 +523,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      relationship_status: ["pending", "accepted", "rejected"],
+    },
   },
 } as const

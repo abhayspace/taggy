@@ -3,13 +3,24 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Settings, Heart, Users, Grid3x3, LogOut, Loader2 } from "lucide-react";
+import { Settings, Users, Grid3x3, LogOut, Loader2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import defaultAvatar from "@/assets/default-avatar.png";
 import { EditProfileDialog } from "@/components/EditProfileDialog";
 import { FriendsList } from "@/components/FriendsList";
+
+interface Relationship {
+  id: string;
+  user_id: string;
+  partner_id: string;
+  status: 'pending' | 'accepted' | 'rejected';
+  partner_profile?: {
+    display_name: string | null;
+    username: string;
+  };
+}
 
 interface Profile {
   id: string;
@@ -31,6 +42,7 @@ const Profile = () => {
   const [friendsCount, setFriendsCount] = useState(0);
   const [showEditProfile, setShowEditProfile] = useState(false);
   const [showFriends, setShowFriends] = useState(false);
+  const [relationship, setRelationship] = useState<Relationship | null>(null);
 
   useEffect(() => {
     loadProfile();
@@ -49,6 +61,7 @@ const Profile = () => {
 
   useEffect(() => {
     loadFriendsCount();
+    loadRelationship();
   }, [profile]);
 
   const loadFriendsCount = async () => {
@@ -93,6 +106,36 @@ const Profile = () => {
       });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadRelationship = async () => {
+    if (!profile) return;
+
+    try {
+      const { data: relationshipData } = await supabase
+        .from('relationships')
+        .select(`
+          *,
+          partner_profile:profiles!relationships_partner_id_fkey(display_name, username),
+          user_profile:profiles!relationships_user_id_fkey(display_name, username)
+        `)
+        .or(`user_id.eq.${profile.id},partner_id.eq.${profile.id}`)
+        .eq('status', 'accepted')
+        .maybeSingle();
+
+      if (relationshipData) {
+        // Determine which profile is the partner
+        const isCurrentUserTheInitiator = relationshipData.user_id === profile.id;
+        setRelationship({
+          ...relationshipData,
+          partner_profile: isCurrentUserTheInitiator 
+            ? (relationshipData as any).partner_profile 
+            : (relationshipData as any).user_profile
+        });
+      }
+    } catch (error: any) {
+      console.error('Error loading relationship:', error);
     }
   };
 
@@ -173,6 +216,14 @@ const Profile = () => {
               {profile.age && profile.gender && <span>•</span>}
               {profile.gender && <span className="capitalize">{profile.gender.replace('_', ' ')}</span>}
             </p>
+
+            {/* Relationship Status */}
+            {relationship && (
+              <Badge className="mb-4 bg-gradient-to-r from-primary to-secondary text-primary-foreground px-4 py-2 text-sm">
+                💕 In a relationship with {relationship.partner_profile?.display_name || relationship.partner_profile?.username}
+              </Badge>
+            )}
+
             <p className="text-foreground/80 mb-4 leading-relaxed">
               {profile.bio || "No bio yet ✨"}
             </p>

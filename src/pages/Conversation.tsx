@@ -3,11 +3,22 @@ import { useParams, useNavigate } from "react-router-dom";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { ArrowLeft, Send, Loader2, MessageCircle } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { ArrowLeft, Send, Loader2, MessageCircle, Heart } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import defaultAvatar from "@/assets/default-avatar.png";
 import { formatDistanceToNow } from "date-fns";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 interface Message {
   id: string;
@@ -22,6 +33,14 @@ interface OtherUser {
   username: string;
   display_name: string | null;
   profile_picture_url: string | null;
+  gender: string | null;
+}
+
+interface Relationship {
+  id: string;
+  user_id: string;
+  partner_id: string;
+  status: 'pending' | 'accepted' | 'rejected';
 }
 
 const Conversation = () => {
@@ -34,10 +53,16 @@ const Conversation = () => {
   const [sending, setSending] = useState(false);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [otherUser, setOtherUser] = useState<OtherUser | null>(null);
+  const [canPropose, setCanPropose] = useState(false);
+  const [relationship, setRelationship] = useState<Relationship | null>(null);
+  const [proposing, setProposing] = useState(false);
+  const [showProposalDialog, setShowProposalDialog] = useState(false);
+  const [showResponseDialog, setShowResponseDialog] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     loadConversation();
+    loadRelationshipStatus();
 
     // Set up realtime subscription for new messages
     const channel = supabase
@@ -100,7 +125,8 @@ const Conversation = () => {
             id,
             username,
             display_name,
-            profile_picture_url
+            profile_picture_url,
+            gender
           )
         `)
         .eq('conversation_id', conversationId)
@@ -109,6 +135,13 @@ const Conversation = () => {
 
       if (participantError) throw participantError;
       setOtherUser(otherParticipant.profiles as any);
+
+      // Check if can propose
+      if (otherParticipant.profiles) {
+        const { data: canProposeData } = await supabase
+          .rpc('can_propose_to', { _partner_id: (otherParticipant.profiles as any).id });
+        setCanPropose(canProposeData || false);
+      }
 
       // Mark messages as read
       await supabase
@@ -126,6 +159,25 @@ const Conversation = () => {
       });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadRelationshipStatus = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data: relationshipData } = await supabase
+        .from('relationships')
+        .select('*')
+        .or(`user_id.eq.${user.id},partner_id.eq.${user.id}`)
+        .maybeSingle();
+
+      if (relationshipData) {
+        setRelationship(relationshipData);
+      }
+    } catch (error: any) {
+      console.error('Error loading relationship:', error);
     }
   };
 
@@ -163,6 +215,72 @@ const Conversation = () => {
     }
   };
 
+  const handlePropose = async () => {
+    if (!otherUser || !currentUserId) return;
+
+    setProposing(true);
+    try {
+      const { error } = await supabase
+        .from('relationships')
+        .insert({
+          user_id: currentUserId,
+          partner_id: otherUser.id,
+          status: 'pending'
+        });
+
+      if (error) throw error;
+
+      toast({
+        title: "Proposal sent! 💝",
+        description: `You've sent a relationship proposal to ${otherUser.display_name || otherUser.username}`,
+      });
+
+      await loadRelationshipStatus();
+      setShowProposalDialog(false);
+      setCanPropose(false);
+    } catch (error: any) {
+      toast({
+        title: "Error sending proposal",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setProposing(false);
+    }
+  };
+
+  const handleProposalResponse = async (accept: boolean) => {
+    if (!relationship || !currentUserId) return;
+
+    try {
+      const { error } = await supabase
+        .from('relationships')
+        .update({ 
+          status: accept ? 'accepted' : 'rejected',
+          responded_at: new Date().toISOString()
+        })
+        .eq('id', relationship.id);
+
+      if (error) throw error;
+
+      toast({
+        title: accept ? "Relationship accepted! 💕" : "Proposal declined",
+        description: accept 
+          ? "You're now in a relationship!" 
+          : "You've declined the proposal",
+      });
+
+      await loadRelationshipStatus();
+      setShowResponseDialog(false);
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  };
+
   if (loading) {
     return (
       <div className="h-screen flex items-center justify-center">
@@ -196,11 +314,87 @@ const Conversation = () => {
               <h2 className="font-bold text-white text-lg">
                 {otherUser.display_name || otherUser.username}
               </h2>
-              <p className="text-sm text-white/80">@{otherUser.username}</p>
+              <p className="text-sm text-white/80">
+                @{otherUser.username}
+                {relationship?.status === 'accepted' && " 💕"}
+              </p>
             </div>
+
+            {/* Relationship Actions */}
+            {canPropose && !relationship && (
+              <Button
+                onClick={() => setShowProposalDialog(true)}
+                size="sm"
+                className="rounded-full bg-white/20 hover:bg-white/30 text-white border-2 border-white/50"
+              >
+                <Heart className="w-4 h-4 mr-2" />
+                Propose
+              </Button>
+            )}
+            {relationship?.status === 'pending' && relationship.partner_id === currentUserId && (
+              <Button
+                onClick={() => setShowResponseDialog(true)}
+                size="sm"
+                className="rounded-full bg-white/20 hover:bg-white/30 text-white border-2 border-white/50 animate-pulse"
+              >
+                <Heart className="w-4 h-4 mr-2" />
+                Respond
+              </Button>
+            )}
+            {relationship?.status === 'pending' && relationship.user_id === currentUserId && (
+              <Badge className="bg-white/20 text-white border-white/50">
+                Proposal Sent
+              </Badge>
+            )}
           </>
         )}
       </div>
+
+      {/* Proposal Dialog */}
+      <AlertDialog open={showProposalDialog} onOpenChange={setShowProposalDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <Heart className="w-5 h-5 text-primary" />
+              Send Relationship Proposal?
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to propose a relationship with {otherUser?.display_name || otherUser?.username}? 
+              They will be notified and can accept or decline.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handlePropose} disabled={proposing}>
+              {proposing ? <Loader2 className="w-4 h-4 animate-spin" /> : "Send Proposal 💝"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Response Dialog */}
+      <AlertDialog open={showResponseDialog} onOpenChange={setShowResponseDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <Heart className="w-5 h-5 text-primary" />
+              Relationship Proposal
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {otherUser?.display_name || otherUser?.username} has proposed a relationship with you! 
+              Would you like to accept?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => handleProposalResponse(false)}>
+              Decline
+            </AlertDialogCancel>
+            <AlertDialogAction onClick={() => handleProposalResponse(true)}>
+              Accept 💕
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* Messages */}
       <div className="flex-1 overflow-auto p-6 space-y-4 bg-gradient-to-b from-background to-muted/20">
