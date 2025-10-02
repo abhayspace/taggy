@@ -4,7 +4,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Search, MessageCircle, Loader2, Plus } from "lucide-react";
+import { Search, MessageCircle, Loader2, Plus, Trash2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
@@ -142,6 +142,29 @@ const Chat = () => {
     }
   };
 
+  const deleteConversation = async (conversationId: string) => {
+    try {
+      const { error } = await supabase
+        .from('conversations')
+        .delete()
+        .eq('id', conversationId);
+
+      if (error) throw error;
+
+      toast({
+        title: "Conversation deleted",
+      });
+
+      loadChats();
+    } catch (error: any) {
+      toast({
+        title: "Error deleting conversation",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  };
+
   const filteredChats = chats.filter(chat =>
     chat.other_user.username.toLowerCase().includes(searchQuery.toLowerCase()) ||
     chat.other_user.display_name?.toLowerCase().includes(searchQuery.toLowerCase())
@@ -157,22 +180,24 @@ const Chat = () => {
 
   return (
     <div className="min-h-screen bg-background pb-20">
-      {/* Header with Gradient */}
-      <div className="bg-gradient-to-br from-primary via-secondary to-accent p-6 rounded-b-[3rem] shadow-glow-primary animate-fade-in">
-        <div className="flex items-center justify-between mb-3">
+      {/* Header */}
+      <div className="p-6 space-y-2 bg-background">
+        <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-4xl font-bold text-primary-foreground flex items-center gap-3 mb-1">
-              <MessageCircle className="w-10 h-10" />
+            <h1 className="text-3xl font-bold bg-gradient-primary bg-clip-text text-transparent flex items-center gap-2">
+              <MessageCircle className="w-8 h-8 text-primary" />
               Messages
             </h1>
-            <p className="text-primary-foreground/90 text-sm">Stay connected with your friends</p>
+            <p className="text-muted-foreground">
+              {chats.length} {chats.length === 1 ? 'conversation' : 'conversations'}
+            </p>
           </div>
           <Button
             onClick={() => setShowStartChat(true)}
             size="icon"
-            className="rounded-full bg-white/20 hover:bg-white/30 backdrop-blur-sm shadow-lg hover:scale-110 transition-all"
+            className="rounded-full bg-gradient-primary hover:scale-110 transition-transform"
           >
-            <Plus className="w-6 h-6 text-white" />
+            <Plus className="w-6 h-6" />
           </Button>
         </div>
       </div>
@@ -205,38 +230,54 @@ const Chat = () => {
           filteredChats.map((chat, index) => (
             <Card
               key={chat.conversation_id}
-              onClick={() => navigate(`/conversation/${chat.conversation_id}`)}
-              className="p-5 rounded-3xl hover:shadow-lg hover:scale-[1.02] active:scale-[0.98] transition-all cursor-pointer bg-card/50 backdrop-blur-sm border border-primary/10 animate-fade-in hover:border-primary/30"
+              className="p-5 rounded-3xl hover:shadow-lg hover:scale-[1.02] transition-all bg-card/50 backdrop-blur-sm border border-primary/10 animate-fade-in hover:border-primary/30 group"
               style={{ animationDelay: `${index * 50}ms` }}
             >
               <div className="flex items-center gap-4">
-                <div className="relative">
-                  <Avatar className="w-16 h-16 border-2 border-primary/20 shadow-md">
-                    <AvatarImage src={chat.other_user.profile_picture_url || defaultAvatar} />
-                    <AvatarFallback className="bg-gradient-primary text-primary-foreground text-xl">
-                      {(chat.other_user.display_name || chat.other_user.username)[0].toUpperCase()}
-                    </AvatarFallback>
-                  </Avatar>
-                  {chat.unread_count > 0 && (
-                    <div className="absolute -top-1 -right-1 w-6 h-6 bg-gradient-accent rounded-full flex items-center justify-center shadow-lg animate-pulse">
-                      <span className="text-xs font-bold text-accent-foreground">{chat.unread_count}</span>
-                    </div>
-                  )}
-                </div>
-
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center justify-between mb-2">
-                    <h3 className="font-bold text-lg truncate">{chat.other_user.display_name || chat.other_user.username}</h3>
-                    {chat.last_message && (
-                      <span className="text-xs text-muted-foreground font-medium">
-                        {formatDistanceToNow(new Date(chat.last_message.created_at), { addSuffix: true })}
-                      </span>
+                <div
+                  onClick={() => navigate(`/conversation/${chat.conversation_id}`)}
+                  className="flex items-center gap-4 flex-1 min-w-0 cursor-pointer"
+                >
+                  <div className="relative">
+                    <Avatar className="w-16 h-16 border-2 border-primary/20 shadow-md">
+                      <AvatarImage src={chat.other_user.profile_picture_url || defaultAvatar} />
+                      <AvatarFallback className="bg-gradient-primary text-primary-foreground text-xl">
+                        {(chat.other_user.display_name || chat.other_user.username)[0].toUpperCase()}
+                      </AvatarFallback>
+                    </Avatar>
+                    {chat.unread_count > 0 && (
+                      <div className="absolute -top-1 -right-1 w-6 h-6 bg-gradient-accent rounded-full flex items-center justify-center shadow-lg animate-pulse">
+                        <span className="text-xs font-bold text-accent-foreground">{chat.unread_count}</span>
+                      </div>
                     )}
                   </div>
-                  <p className="text-sm text-muted-foreground truncate">
-                    {chat.last_message?.content || "No messages yet"}
-                  </p>
+
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between mb-2">
+                      <h3 className="font-bold text-lg truncate">{chat.other_user.display_name || chat.other_user.username}</h3>
+                      {chat.last_message && (
+                        <span className="text-xs text-muted-foreground font-medium">
+                          {formatDistanceToNow(new Date(chat.last_message.created_at), { addSuffix: true })}
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-sm text-muted-foreground truncate">
+                      {chat.last_message?.content || "No messages yet"}
+                    </p>
+                  </div>
                 </div>
+
+                <Button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    deleteConversation(chat.conversation_id);
+                  }}
+                  variant="ghost"
+                  size="icon"
+                  className="opacity-0 group-hover:opacity-100 transition-opacity"
+                >
+                  <Trash2 className="w-5 h-5 text-destructive" />
+                </Button>
               </div>
             </Card>
           ))

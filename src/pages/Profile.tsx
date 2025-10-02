@@ -9,6 +9,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import defaultAvatar from "@/assets/default-avatar.png";
 import { EditProfileDialog } from "@/components/EditProfileDialog";
+import { FriendsList } from "@/components/FriendsList";
 
 interface Profile {
   id: string;
@@ -16,6 +17,7 @@ interface Profile {
   display_name: string | null;
   bio: string | null;
   age: number | null;
+  gender: string | null;
   profile_picture_url: string | null;
   interests: string[] | null;
 }
@@ -28,6 +30,7 @@ const Profile = () => {
   const [loading, setLoading] = useState(true);
   const [friendsCount, setFriendsCount] = useState(0);
   const [showEditProfile, setShowEditProfile] = useState(false);
+  const [showFriends, setShowFriends] = useState(false);
 
   useEffect(() => {
     loadProfile();
@@ -138,41 +141,37 @@ const Profile = () => {
       {/* Profile Card */}
       <div className="px-6 -mt-20 relative z-10 animate-fade-in">
         <Card className="p-6 rounded-3xl bg-card/95 backdrop-blur-md border-2 border-primary/20 shadow-2xl">
-          <div className="flex items-end gap-5 mb-6">
-            <div className="relative">
-              <Avatar className="w-32 h-32 border-4 border-background shadow-2xl ring-4 ring-primary/20">
-                <AvatarImage src={profile.profile_picture_url || defaultAvatar} />
-                <AvatarFallback className="text-4xl bg-gradient-primary text-primary-foreground">
-                  {profile.username?.[0]?.toUpperCase() || "U"}
-                </AvatarFallback>
-              </Avatar>
-              <div className="absolute -bottom-2 -right-2 w-10 h-10 bg-gradient-accent rounded-full flex items-center justify-center shadow-lg">
-                <Heart className="w-5 h-5 text-accent-foreground" fill="currentColor" />
-              </div>
+          <div className="flex items-start gap-4 mb-6">
+            <Avatar className="w-24 h-24 border-4 border-background shadow-2xl ring-4 ring-primary/20">
+              <AvatarImage src={profile.profile_picture_url || defaultAvatar} />
+              <AvatarFallback className="text-3xl bg-muted">
+                {profile.username?.[0]?.toUpperCase() || "U"}
+              </AvatarFallback>
+            </Avatar>
+
+            <div className="flex-1">
+              <h1 className="text-2xl font-bold bg-gradient-primary bg-clip-text text-transparent">
+                {profile.display_name || profile.username}
+              </h1>
+              <p className="text-sm text-muted-foreground">@{profile.username}</p>
             </div>
 
             <Button 
               onClick={() => setShowEditProfile(true)}
-              className="mb-2 rounded-full bg-gradient-secondary hover:scale-105 transition-transform shadow-lg px-6"
+              size="sm"
+              className="rounded-full bg-gradient-secondary hover:scale-105 transition-transform"
             >
               <Settings className="w-4 h-4 mr-2" />
-              Edit Profile
+              Edit
             </Button>
           </div>
 
-          {/* Username and Bio */}
+          {/* Bio and Details */}
           <div className="mb-6">
-            <h1 className="text-3xl font-bold bg-gradient-primary bg-clip-text text-transparent mb-2">
-              {profile.display_name || profile.username}
-            </h1>
-            <p className="text-sm text-muted-foreground mb-2 flex items-center gap-2">
-              <span className="text-primary">@{profile.username}</span>
-              {profile.age && (
-                <>
-                  <span>•</span>
-                  <span>{profile.age} years old</span>
-                </>
-              )}
+            <p className="text-sm text-muted-foreground mb-2 flex items-center gap-2 flex-wrap">
+              {profile.age && <span>{profile.age} years old</span>}
+              {profile.age && profile.gender && <span>•</span>}
+              {profile.gender && <span className="capitalize">{profile.gender.replace('_', ' ')}</span>}
             </p>
             <p className="text-foreground/80 mb-4 leading-relaxed">
               {profile.bio || "No bio yet ✨"}
@@ -201,7 +200,11 @@ const Profile = () => {
             <p className="text-3xl font-bold bg-gradient-primary bg-clip-text text-transparent mb-1">{stats.posts}</p>
             <p className="text-sm font-medium text-muted-foreground">Posts</p>
           </Card>
-          <Card className="p-5 text-center rounded-2xl bg-gradient-to-br from-secondary/10 to-secondary/5 border-2 border-secondary/20 hover:shadow-glow-secondary transition-all hover:scale-105 animate-fade-in" style={{ animationDelay: '50ms' }}>
+          <Card 
+            onClick={() => setShowFriends(true)}
+            className="p-5 text-center rounded-2xl bg-gradient-to-br from-secondary/10 to-secondary/5 border-2 border-secondary/20 hover:shadow-glow-secondary transition-all hover:scale-105 animate-fade-in cursor-pointer" 
+            style={{ animationDelay: '50ms' }}
+          >
             <p className="text-3xl font-bold bg-gradient-secondary bg-clip-text text-transparent mb-1">{stats.friends}</p>
             <p className="text-sm font-medium text-muted-foreground">Friends</p>
           </Card>
@@ -255,14 +258,21 @@ const Profile = () => {
         </div>
       </div>
 
-      {/* Edit Profile Dialog */}
+      {/* Dialogs */}
       {profile && (
-        <EditProfileDialog
-          open={showEditProfile}
-          onOpenChange={setShowEditProfile}
-          profile={profile}
-          onProfileUpdated={loadProfile}
-        />
+        <>
+          <EditProfileDialog
+            open={showEditProfile}
+            onOpenChange={setShowEditProfile}
+            profile={profile}
+            onProfileUpdated={loadProfile}
+          />
+          <FriendsList
+            open={showFriends}
+            onOpenChange={setShowFriends}
+            userId={profile.id}
+          />
+        </>
       )}
     </div>
   );

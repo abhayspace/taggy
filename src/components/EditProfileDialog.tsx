@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Loader2, X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -17,6 +18,7 @@ interface EditProfileDialogProps {
     display_name: string | null;
     bio: string | null;
     age: number | null;
+    gender: string | null;
     interests: string[] | null;
     profile_picture_url: string | null;
   };
@@ -28,6 +30,7 @@ export const EditProfileDialog = ({ open, onOpenChange, profile, onProfileUpdate
   const [displayName, setDisplayName] = useState(profile.display_name || "");
   const [bio, setBio] = useState(profile.bio || "");
   const [age, setAge] = useState(profile.age?.toString() || "");
+  const [gender, setGender] = useState(profile.gender || "");
   const [profilePictureUrl, setProfilePictureUrl] = useState(profile.profile_picture_url || "");
   const [interests, setInterests] = useState<string[]>(profile.interests || []);
   const [newInterest, setNewInterest] = useState("");
@@ -39,6 +42,7 @@ export const EditProfileDialog = ({ open, onOpenChange, profile, onProfileUpdate
     setDisplayName(profile.display_name || "");
     setBio(profile.bio || "");
     setAge(profile.age?.toString() || "");
+    setGender(profile.gender || "");
     setProfilePictureUrl(profile.profile_picture_url || "");
     setInterests(profile.interests || []);
   }, [profile]);
@@ -67,6 +71,7 @@ export const EditProfileDialog = ({ open, onOpenChange, profile, onProfileUpdate
           display_name: displayName.trim() || null,
           bio: bio.trim() || null,
           age: age ? parseInt(age) : null,
+          gender: gender || null,
           profile_picture_url: profilePictureUrl.trim() || null,
           interests: interests.length > 0 ? interests : null,
         })
@@ -128,6 +133,21 @@ export const EditProfileDialog = ({ open, onOpenChange, profile, onProfileUpdate
               onChange={(e) => setAge(e.target.value)}
               placeholder="Enter your age"
             />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="gender">Gender</Label>
+            <Select value={gender} onValueChange={setGender}>
+              <SelectTrigger id="gender">
+                <SelectValue placeholder="Select gender" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="male">Male</SelectItem>
+                <SelectItem value="female">Female</SelectItem>
+                <SelectItem value="other">Other</SelectItem>
+                <SelectItem value="prefer_not_to_say">Prefer not to say</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
 
           <div className="space-y-2">

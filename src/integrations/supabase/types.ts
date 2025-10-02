@@ -230,7 +230,7 @@ export type Database = {
           comments_count: number
           created_at: string
           id: string
-          image_url: string
+          image_url: string | null
           likes_count: number
           updated_at: string
           user_id: string
@@ -240,7 +240,7 @@ export type Database = {
           comments_count?: number
           created_at?: string
           id?: string
-          image_url: string
+          image_url?: string | null
           likes_count?: number
           updated_at?: string
           user_id: string
@@ -250,7 +250,7 @@ export type Database = {
           comments_count?: number
           created_at?: string
           id?: string
-          image_url?: string
+          image_url?: string | null
           likes_count?: number
           updated_at?: string
           user_id?: string
@@ -271,6 +271,7 @@ export type Database = {
           bio: string | null
           created_at: string | null
           display_name: string | null
+          gender: string | null
           id: string
           interests: string[] | null
           profile_picture_url: string | null
@@ -282,6 +283,7 @@ export type Database = {
           bio?: string | null
           created_at?: string | null
           display_name?: string | null
+          gender?: string | null
           id: string
           interests?: string[] | null
           profile_picture_url?: string | null
@@ -293,6 +295,7 @@ export type Database = {
           bio?: string | null
           created_at?: string | null
           display_name?: string | null
+          gender?: string | null
           id?: string
           interests?: string[] | null
           profile_picture_url?: string | null
