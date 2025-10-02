@@ -3,12 +3,14 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { Search, MessageCircle, Loader2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Search, MessageCircle, Loader2, Plus } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
 import defaultAvatar from "@/assets/default-avatar.png";
 import { formatDistanceToNow } from "date-fns";
+import { StartChatDialog } from "@/components/StartChatDialog";
 
 interface ChatData {
   conversation_id: string;
@@ -31,6 +33,7 @@ const Chat = () => {
   const [chats, setChats] = useState<ChatData[]>([]);
   const [loading, setLoading] = useState(true);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [showStartChat, setShowStartChat] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
 
@@ -156,10 +159,19 @@ const Chat = () => {
     <div className="h-full flex flex-col pb-20">
       {/* Header */}
       <div className="bg-gradient-accent p-6 rounded-b-3xl">
-        <h1 className="text-3xl font-bold text-accent-foreground mb-2 flex items-center gap-2">
-          <MessageCircle className="w-8 h-8" />
-          Messages
-        </h1>
+        <div className="flex items-center justify-between mb-2">
+          <h1 className="text-3xl font-bold text-accent-foreground flex items-center gap-2">
+            <MessageCircle className="w-8 h-8" />
+            Messages
+          </h1>
+          <Button
+            onClick={() => setShowStartChat(true)}
+            size="icon"
+            className="rounded-full bg-accent-foreground/20 hover:bg-accent-foreground/30"
+          >
+            <Plus className="w-5 h-5 text-accent-foreground" />
+          </Button>
+        </div>
         <p className="text-accent-foreground/80">Stay connected with your friends</p>
       </div>
 
@@ -183,6 +195,7 @@ const Chat = () => {
           {filteredChats.map((chat) => (
             <Card
               key={chat.conversation_id}
+              onClick={() => navigate(`/conversation/${chat.conversation_id}`)}
               className="p-4 rounded-2xl hover:shadow-glow-accent transition-all cursor-pointer animate-fade-in"
             >
               <div className="flex items-center gap-4">
@@ -225,6 +238,12 @@ const Chat = () => {
           </div>
         )}
       </div>
+
+      {/* Start Chat Dialog */}
+      <StartChatDialog
+        open={showStartChat}
+        onOpenChange={setShowStartChat}
+      />
     </div>
   );
 };

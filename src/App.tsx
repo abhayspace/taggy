@@ -7,6 +7,7 @@ import Auth from "./pages/Auth";
 import Feed from "./pages/Feed";
 import Discover from "./pages/Discover";
 import Chat from "./pages/Chat";
+import Conversation from "./pages/Conversation";
 import Profile from "./pages/Profile";
 import Notifications from "./pages/Notifications";
 import NotFound from "./pages/NotFound";
@@ -18,10 +19,11 @@ const queryClient = new QueryClient();
 const AppLayout = () => {
   const location = useLocation();
   const showBottomNav = ["/feed", "/discover", "/chat", "/profile", "/notifications"].includes(location.pathname);
+  const hideBottomNav = location.pathname.startsWith("/conversation/");
 
   return (
     <>
-      {showBottomNav && <BottomNav />}
+      {showBottomNav && !hideBottomNav && <BottomNav />}
     </>
   );
 };
@@ -38,6 +40,7 @@ const App = () => (
           <Route path="/feed" element={<Feed />} />
           <Route path="/discover" element={<Discover />} />
           <Route path="/chat" element={<Chat />} />
+          <Route path="/conversation/:conversationId" element={<Conversation />} />
           <Route path="/profile" element={<Profile />} />
           <Route path="/notifications" element={<Notifications />} />
           <Route path="*" element={<NotFound />} />
