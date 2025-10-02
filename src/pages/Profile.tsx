@@ -10,6 +10,7 @@ import { useToast } from "@/hooks/use-toast";
 import defaultAvatar from "@/assets/default-avatar.png";
 import { EditProfileDialog } from "@/components/EditProfileDialog";
 import { FriendsList } from "@/components/FriendsList";
+import { SettingsDialog } from "@/components/SettingsDialog";
 
 interface Relationship {
   id: string;
@@ -45,6 +46,7 @@ const Profile = () => {
   const [friendsCount, setFriendsCount] = useState(0);
   const [showEditProfile, setShowEditProfile] = useState(false);
   const [showFriends, setShowFriends] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
   const [relationship, setRelationship] = useState<Relationship | null>(null);
 
   useEffect(() => {
@@ -174,50 +176,51 @@ const Profile = () => {
       {/* Header */}
       <div className="p-6 space-y-6">
         <div className="flex items-center justify-between">
-          <div className="space-y-1">
-            <h1 className="text-3xl font-bold bg-gradient-primary bg-clip-text text-transparent">
-              Profile
-            </h1>
-            <p className="text-muted-foreground">Manage your account</p>
-          </div>
-          <Button
-            onClick={handleLogout}
-            variant="outline"
-            className="rounded-full"
-          >
-            <LogOut className="w-5 h-5 mr-2" />
-            Logout
-          </Button>
-        </div>
-
-        {/* Profile Card */}
-        <Card className="p-6 rounded-3xl bg-card/50 backdrop-blur-sm border-2 border-primary/10 hover:shadow-glow-primary transition-all">
-          <div className="flex flex-col items-center text-center mb-6">
-            <Avatar className="w-28 h-28 border-4 border-primary/20 shadow-lg mb-4">
-              <AvatarImage src={profile.profile_picture_url || defaultAvatar} />
-              <AvatarFallback className="text-3xl bg-gradient-primary text-primary-foreground">
-                {profile.username?.[0]?.toUpperCase() || "U"}
-              </AvatarFallback>
-            </Avatar>
-
-            <h2 className="text-2xl font-bold mb-1">
-              {profile.display_name || profile.username}
-            </h2>
-            <p className="text-sm text-muted-foreground mb-4">@{profile.username}</p>
-
-            <Button 
-              onClick={() => setShowEditProfile(true)}
-              size="sm"
-              className="rounded-full bg-gradient-primary hover:scale-105 transition-transform"
+          <h1 className="text-2xl font-bold">{profile.username}</h1>
+          <div className="flex items-center gap-2">
+            <Button
+              onClick={() => setShowSettings(true)}
+              variant="ghost"
+              size="icon"
+              className="rounded-full"
             >
-              <Settings className="w-4 h-4 mr-2" />
-              Edit Profile
+              <Settings className="w-5 h-5" />
+            </Button>
+            <Button
+              onClick={handleLogout}
+              variant="ghost"
+              size="icon"
+              className="rounded-full"
+            >
+              <LogOut className="w-5 h-5" />
             </Button>
           </div>
+        </div>
 
-          {/* Bio and Details */}
-          <div className="space-y-4">
-            <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground flex-wrap">
+        {/* Profile Section */}
+        <div className="flex gap-4 items-start">
+          <Avatar className="w-20 h-20 border-2 border-border">
+            <AvatarImage src={profile.profile_picture_url || defaultAvatar} />
+            <AvatarFallback className="text-2xl bg-muted">
+              {profile.username?.[0]?.toUpperCase() || "U"}
+            </AvatarFallback>
+          </Avatar>
+
+          <div className="flex-1 space-y-1">
+            <h2 className="text-lg font-semibold leading-tight">
+              {profile.display_name || profile.username}
+            </h2>
+            <p className="text-sm text-muted-foreground">@{profile.username}</p>
+            
+            {/* Bio */}
+            {profile.bio && (
+              <p className="text-sm text-foreground/90 leading-relaxed pt-2">
+                {profile.bio}
+              </p>
+            )}
+
+            {/* Details */}
+            <div className="flex items-center gap-2 text-xs text-muted-foreground pt-1">
               {profile.age && <span>{profile.age} years old</span>}
               {profile.age && profile.gender && <span>•</span>}
               {profile.gender && <span className="capitalize">{profile.gender.replace('_', ' ')}</span>}
@@ -225,25 +228,19 @@ const Profile = () => {
 
             {/* Relationship Status */}
             {relationship && (
-              <div className="flex justify-center">
-                <Badge className="bg-gradient-to-r from-primary to-secondary text-primary-foreground px-4 py-2 text-sm rounded-full">
-                  💕 In a relationship with {relationship.partner_profile?.display_name || relationship.partner_profile?.username}
-                </Badge>
-              </div>
+              <Badge className="bg-gradient-to-r from-primary to-secondary text-primary-foreground px-3 py-1 text-xs rounded-full mt-2">
+                💕 In a relationship with {relationship.partner_profile?.display_name || relationship.partner_profile?.username}
+              </Badge>
             )}
-
-            <p className="text-foreground/80 leading-relaxed text-center px-4">
-              {profile.bio || "No bio yet ✨"}
-            </p>
 
             {/* Interests */}
             {profile.interests && profile.interests.length > 0 && (
-              <div className="flex flex-wrap gap-2 justify-center">
+              <div className="flex flex-wrap gap-1.5 pt-2">
                 {profile.interests.map((interest, index) => (
                   <Badge
                     key={interest}
-                    className="bg-gradient-accent text-accent-foreground rounded-full px-4 py-1.5 shadow-sm animate-fade-in hover:scale-105 transition-transform"
-                    style={{ animationDelay: `${index * 50}ms` }}
+                    variant="secondary"
+                    className="text-xs rounded-full px-2.5 py-0.5"
                   >
                     {interest}
                   </Badge>
@@ -251,7 +248,7 @@ const Profile = () => {
               </div>
             )}
           </div>
-        </Card>
+        </div>
 
         {/* Stats Cards */}
         <div className="grid grid-cols-3 gap-4">
@@ -320,6 +317,11 @@ const Profile = () => {
       {/* Dialogs */}
       {profile && (
         <>
+          <SettingsDialog
+            open={showSettings}
+            onOpenChange={setShowSettings}
+            onEditProfile={() => setShowEditProfile(true)}
+          />
           <EditProfileDialog
             open={showEditProfile}
             onOpenChange={setShowEditProfile}
