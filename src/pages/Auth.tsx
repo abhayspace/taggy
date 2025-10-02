@@ -1,70 +1,182 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
-import { useNavigate } from "react-router-dom";
-import { Heart, Sparkles } from "lucide-react";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Textarea } from "@/components/ui/textarea";
+import { Badge } from "@/components/ui/badge";
+import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
+import { Loader2, X, Upload } from "lucide-react";
 import heroBg from "@/assets/hero-bg.jpg";
 
 const Auth = () => {
+  const navigate = useNavigate();
+  const { toast } = useToast();
   const [isLogin, setIsLogin] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
-  const navigate = useNavigate();
+  const [bio, setBio] = useState("");
+  const [age, setAge] = useState("");
+  const [interests, setInterests] = useState<string[]>([]);
+  const [newInterest, setNewInterest] = useState("");
+  const [profilePicture, setProfilePicture] = useState<File | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  // Check if user is already logged in
+  useEffect(() => {
+    const checkUser = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
+        navigate("/feed");
+      }
+    };
+    checkUser();
+  }, [navigate]);
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setProfilePicture(file);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setPreviewUrl(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const addInterest = () => {
+    if (newInterest.trim() && !interests.includes(newInterest.trim())) {
+      setInterests([...interests, newInterest.trim()]);
+      setNewInterest("");
+    }
+  };
+
+  const removeInterest = (interest: string) => {
+    setInterests(interests.filter((i) => i !== interest));
+  };
+
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Mock auth - in real app, this would connect to backend
-    localStorage.setItem("tagmate_user", JSON.stringify({ username }));
-    navigate("/feed");
+    setLoading(true);
+
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: `${username}@tagmate.app`,
+        password,
+      });
+
+      if (error) throw error;
+
+      toast({
+        title: "Welcome back!",
+        description: "You've successfully logged in.",
+      });
+
+      navigate("/feed");
+    } catch (error: any) {
+      toast({
+        title: "Login failed",
+        description: error.message || "Invalid username or password",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSignup = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+
+    try {
+      // Sign up with username as email (username@tagmate.app)
+      const { data, error } = await supabase.auth.signUp({
+        email: `${username}@tagmate.app`,
+        password,
+        options: {
+          data: {
+            username,
+            bio,
+            age: age ? parseInt(age) : null,
+            interests: interests.join(","),
+          },
+          emailRedirectTo: `${window.location.origin}/feed`,
+        },
+      });
+
+      if (error) throw error;
+
+      toast({
+        title: "Account created!",
+        description: "Welcome to TagMate!",
+      });
+
+      navigate("/feed");
+    } catch (error: any) {
+      toast({
+        title: "Signup failed",
+        description: error.message || "Could not create account",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden">
-      <div 
-        className="absolute inset-0 z-0"
-        style={{
-          backgroundImage: `url(${heroBg})`,
-          backgroundSize: "cover",
-          backgroundPosition: "center",
-        }}
-      >
-        <div className="absolute inset-0 bg-gradient-primary opacity-80" />
-      </div>
-
-      <Card className="w-full max-w-md p-8 backdrop-blur-xl bg-[var(--glass-bg)] border-[var(--glass-border)] relative z-10 animate-scale-in">
+    <div 
+      className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden"
+      style={{
+        backgroundImage: `url(${heroBg})`,
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+      }}
+    >
+      <div className="absolute inset-0 bg-gradient-to-br from-primary/90 via-secondary/80 to-accent/90 backdrop-blur-sm" />
+      
+      <Card className="relative z-10 w-full max-w-md p-8 bg-card/95 backdrop-blur-xl shadow-glow-primary rounded-3xl border-2 border-primary/20 animate-scale-in max-h-[90vh] overflow-y-auto">
         <div className="text-center mb-8">
-          <div className="flex items-center justify-center gap-2 mb-4">
-            <Heart className="w-10 h-10 text-accent animate-bounce-subtle" fill="currentColor" />
-            <h1 className="text-4xl font-bold bg-gradient-accent bg-clip-text text-transparent">
-              TagMate
-            </h1>
-            <Sparkles className="w-8 h-8 text-secondary animate-bounce-subtle" />
-          </div>
+          <h1 className="text-4xl font-bold bg-gradient-primary bg-clip-text text-transparent mb-2">
+            TagMate
+          </h1>
           <p className="text-muted-foreground">
-            {isLogin ? "Welcome back!" : "Join your friends"}
+            {isLogin ? "Welcome back!" : "Join the community"}
           </p>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={isLogin ? handleLogin : handleSignup} className="space-y-6">
           <div className="space-y-2">
+            <Label htmlFor="username" className="text-foreground font-semibold">
+              Username
+            </Label>
             <Input
+              id="username"
               type="text"
-              placeholder="Username"
+              placeholder="Enter your username"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
-              className="h-12 rounded-xl border-2 focus:border-primary transition-all"
+              className="rounded-full h-12 bg-background/50 border-2 border-primary/20 focus:border-primary transition-all"
               required
             />
           </div>
 
           <div className="space-y-2">
+            <Label htmlFor="password" className="text-foreground font-semibold">
+              Password
+            </Label>
             <Input
+              id="password"
               type="password"
-              placeholder="Password"
+              placeholder="Enter your password (min 6 characters)"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="h-12 rounded-xl border-2 focus:border-primary transition-all"
+              className="rounded-full h-12 bg-background/50 border-2 border-primary/20 focus:border-primary transition-all"
+              minLength={6}
               required
             />
           </div>
@@ -72,41 +184,130 @@ const Auth = () => {
           {!isLogin && (
             <>
               <div className="space-y-2">
+                <Label className="text-foreground font-semibold">
+                  Profile Picture (Optional)
+                </Label>
+                <div className="flex items-center gap-4">
+                  <Avatar className="w-20 h-20">
+                    {previewUrl ? (
+                      <AvatarImage src={previewUrl} />
+                    ) : (
+                      <AvatarFallback className="bg-gradient-secondary">
+                        <Upload className="w-8 h-8" />
+                      </AvatarFallback>
+                    )}
+                  </Avatar>
+                  <label htmlFor="profile-pic" className="cursor-pointer">
+                    <div className="px-4 py-2 bg-gradient-secondary rounded-full text-sm font-semibold hover:scale-105 transition-transform">
+                      Choose Photo
+                    </div>
+                    <input
+                      id="profile-pic"
+                      type="file"
+                      accept="image/*"
+                      onChange={handleFileChange}
+                      className="hidden"
+                    />
+                  </label>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="age" className="text-foreground font-semibold">
+                  Age (Optional)
+                </Label>
                 <Input
+                  id="age"
                   type="number"
-                  placeholder="Age"
-                  className="h-12 rounded-xl border-2 focus:border-primary transition-all"
-                  min="13"
-                  max="19"
+                  placeholder="Your age"
+                  value={age}
+                  onChange={(e) => setAge(e.target.value)}
+                  className="rounded-full h-12 bg-background/50 border-2 border-primary/20 focus:border-primary transition-all"
+                  min={13}
+                  max={19}
                 />
               </div>
+
               <div className="space-y-2">
-                <Input
-                  type="text"
-                  placeholder="Interests (e.g., music, sports, gaming)"
-                  className="h-12 rounded-xl border-2 focus:border-primary transition-all"
+                <Label htmlFor="bio" className="text-foreground font-semibold">
+                  Bio (Optional)
+                </Label>
+                <Textarea
+                  id="bio"
+                  placeholder="Tell us about yourself..."
+                  value={bio}
+                  onChange={(e) => setBio(e.target.value)}
+                  className="rounded-2xl bg-background/50 border-2 border-primary/20 focus:border-primary transition-all min-h-[80px]"
+                  maxLength={200}
                 />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="interests" className="text-foreground font-semibold">
+                  Interests (Optional)
+                </Label>
+                <div className="flex gap-2">
+                  <Input
+                    id="interests"
+                    type="text"
+                    placeholder="Add an interest"
+                    value={newInterest}
+                    onChange={(e) => setNewInterest(e.target.value)}
+                    onKeyPress={(e) => e.key === "Enter" && (e.preventDefault(), addInterest())}
+                    className="rounded-full h-10 bg-background/50 border-2 border-primary/20 focus:border-primary transition-all"
+                  />
+                  <Button
+                    type="button"
+                    onClick={addInterest}
+                    className="rounded-full px-6 bg-gradient-accent"
+                  >
+                    Add
+                  </Button>
+                </div>
+                {interests.length > 0 && (
+                  <div className="flex flex-wrap gap-2 mt-3">
+                    {interests.map((interest) => (
+                      <Badge
+                        key={interest}
+                        className="bg-gradient-secondary rounded-full px-3 py-1 flex items-center gap-1"
+                      >
+                        {interest}
+                        <X
+                          className="w-3 h-3 cursor-pointer hover:text-destructive"
+                          onClick={() => removeInterest(interest)}
+                        />
+                      </Badge>
+                    ))}
+                  </div>
+                )}
               </div>
             </>
           )}
 
-          <Button 
-            type="submit" 
-            className="w-full h-12 rounded-xl bg-gradient-primary hover:shadow-glow-primary transition-all font-semibold text-lg"
+          <Button
+            type="submit"
+            disabled={loading}
+            className="w-full rounded-full h-12 bg-gradient-primary hover:scale-105 transition-transform shadow-glow-primary text-lg font-semibold"
           >
-            {isLogin ? "Log In" : "Sign Up"}
+            {loading ? (
+              <Loader2 className="w-5 h-5 animate-spin" />
+            ) : isLogin ? (
+              "Login"
+            ) : (
+              "Sign Up"
+            )}
           </Button>
         </form>
 
         <div className="mt-6 text-center">
           <button
             onClick={() => setIsLogin(!isLogin)}
-            className="text-sm text-muted-foreground hover:text-primary transition-colors"
+            className="text-primary hover:text-primary/80 transition-colors font-semibold"
+            disabled={loading}
           >
-            {isLogin ? "Don't have an account? " : "Already have an account? "}
-            <span className="font-semibold text-primary">
-              {isLogin ? "Sign Up" : "Log In"}
-            </span>
+            {isLogin
+              ? "Don't have an account? Sign up"
+              : "Already have an account? Login"}
           </button>
         </div>
       </Card>
