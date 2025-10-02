@@ -242,7 +242,7 @@ const Profile = () => {
   const stats = {
     posts: posts.length,
     friends: friendsCount,
-    stories: 0,
+    collections: 0, // TODO: implement collections
   };
 
   return (
@@ -339,8 +339,8 @@ const Profile = () => {
             <p className="text-sm font-medium text-muted-foreground">Friends</p>
           </Card>
           <Card className="p-5 text-center rounded-2xl bg-card/50 backdrop-blur-sm border-2 border-primary/10 hover:shadow-lg transition-all hover:scale-105 animate-fade-in" style={{ animationDelay: '100ms' }}>
-            <p className="text-3xl font-bold bg-gradient-primary bg-clip-text text-transparent mb-1">{stats.stories}</p>
-            <p className="text-sm font-medium text-muted-foreground">Stories</p>
+            <p className="text-3xl font-bold bg-gradient-primary bg-clip-text text-transparent mb-1">{stats.collections}</p>
+            <p className="text-sm font-medium text-muted-foreground">Collections</p>
           </Card>
         </div>
 
@@ -348,13 +348,13 @@ const Profile = () => {
         <div className="flex gap-6 border-b-2 mb-4 animate-fade-in" style={{ animationDelay: '150ms' }}>
           <button
             onClick={() => setActiveTab("posts")}
-            className={`flex items-center gap-2 pb-4 px-2 font-semibold transition-all relative ${
+            className={`flex items-center gap-2 pb-4 px-2 text-sm font-medium transition-all relative ${
               activeTab === "posts"
                 ? "text-primary"
                 : "text-muted-foreground hover:text-foreground"
             }`}
           >
-            <Grid3x3 className="w-5 h-5" />
+            <Grid3x3 className="w-4 h-4" />
             Posts
             {activeTab === "posts" && (
               <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-primary rounded-full" />
@@ -362,13 +362,13 @@ const Profile = () => {
           </button>
           <button
             onClick={() => setActiveTab("gallery")}
-            className={`flex items-center gap-2 pb-4 px-2 font-semibold transition-all relative ${
+            className={`flex items-center gap-2 pb-4 px-2 text-sm font-medium transition-all relative ${
               activeTab === "gallery"
                 ? "text-primary"
                 : "text-muted-foreground hover:text-foreground"
             }`}
           >
-            <ImageIcon className="w-5 h-5" />
+            <ImageIcon className="w-4 h-4" />
             Gallery
             {activeTab === "gallery" && (
               <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-primary rounded-full" />
@@ -376,13 +376,13 @@ const Profile = () => {
           </button>
           <button
             onClick={() => setActiveTab("collection")}
-            className={`flex items-center gap-2 pb-4 px-2 font-semibold transition-all relative ${
+            className={`flex items-center gap-2 pb-4 px-2 text-sm font-medium transition-all relative ${
               activeTab === "collection"
                 ? "text-primary"
                 : "text-muted-foreground hover:text-foreground"
             }`}
           >
-            <Bookmark className="w-5 h-5" />
+            <Bookmark className="w-4 h-4" />
             Collection
             {activeTab === "collection" && (
               <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-primary rounded-full" />
@@ -392,49 +392,60 @@ const Profile = () => {
 
         {/* Content based on active tab */}
         {activeTab === "posts" && (
-          posts.length === 0 ? (
-            <div className="text-center py-16 animate-fade-in">
-              <div className="bg-gradient-to-br from-primary/10 to-accent/10 w-24 h-24 rounded-full flex items-center justify-center mx-auto mb-4">
-                <Grid3x3 className="w-12 h-12 text-primary" />
-              </div>
-              <p className="text-lg text-muted-foreground mb-4">Create your first post</p>
-              <Button
-                onClick={() => setShowAddPost(true)}
-                className="rounded-full bg-gradient-primary hover:scale-105 transition-transform"
-              >
-                <Plus className="w-4 h-4 mr-2" />
-                Create Post
-              </Button>
-            </div>
-          ) : (
-            <div className="space-y-4 pb-4">
-              {posts.map((post, i) => (
-                <div
-                  key={post.id}
-                  className="rounded-2xl bg-card/50 backdrop-blur-sm border border-primary/10 hover:border-primary/30 transition-all animate-fade-in overflow-hidden"
-                  style={{ animationDelay: `${i * 50}ms` }}
-                  onTouchStart={() => handlePressStart(post.id)}
-                  onTouchEnd={handlePressEnd}
-                  onMouseDown={() => handlePressStart(post.id)}
-                  onMouseUp={handlePressEnd}
-                  onMouseLeave={handlePressEnd}
-                >
-                  {post.image_url && (
-                    <img
-                      src={post.image_url}
-                      alt={post.caption || "Post"}
-                      className="w-full object-cover"
-                    />
-                  )}
-                  {post.caption && (
-                    <div className="p-4">
-                      <p className="text-foreground">{post.caption}</p>
-                    </div>
-                  )}
+          <>
+            {posts.length === 0 ? (
+              <div className="text-center py-16 animate-fade-in">
+                <div className="bg-gradient-to-br from-primary/10 to-accent/10 w-24 h-24 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <Grid3x3 className="w-12 h-12 text-primary" />
                 </div>
-              ))}
-            </div>
-          )
+                <p className="text-lg text-muted-foreground mb-4">Create your first post</p>
+                <Button
+                  onClick={() => setShowAddPost(true)}
+                  className="rounded-full bg-gradient-primary hover:scale-105 transition-transform"
+                >
+                  <Plus className="w-4 h-4 mr-2" />
+                  Create Post
+                </Button>
+              </div>
+            ) : (
+              <>
+                <Button
+                  onClick={() => setShowAddPost(true)}
+                  size="icon"
+                  className="fixed bottom-24 right-6 h-14 w-14 rounded-full shadow-lg bg-gradient-primary hover:scale-110 transition-transform z-30"
+                >
+                  <Plus className="w-6 h-6" />
+                </Button>
+                <div className="space-y-4 pb-4">
+                  {posts.map((post, i) => (
+                    <div
+                      key={post.id}
+                      className="rounded-2xl bg-card/50 backdrop-blur-sm border border-primary/10 hover:border-primary/30 transition-all animate-fade-in overflow-hidden"
+                      style={{ animationDelay: `${i * 50}ms` }}
+                      onTouchStart={() => handlePressStart(post.id)}
+                      onTouchEnd={handlePressEnd}
+                      onMouseDown={() => handlePressStart(post.id)}
+                      onMouseUp={handlePressEnd}
+                      onMouseLeave={handlePressEnd}
+                    >
+                      {post.image_url && (
+                        <img
+                          src={post.image_url}
+                          alt={post.caption || "Post"}
+                          className="w-full object-cover"
+                        />
+                      )}
+                      {post.caption && (
+                        <div className="p-4">
+                          <p className="text-foreground">{post.caption}</p>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </>
+            )}
+          </>
         )}
 
         {activeTab === "gallery" && (
