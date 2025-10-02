@@ -7,11 +7,11 @@ const BottomNav = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const [unreadCount, setUnreadCount] = useState(0);
-  const [pendingRequestsCount, setPendingRequestsCount] = useState(0);
+  const [notificationsCount, setNotificationsCount] = useState(0);
 
   useEffect(() => {
     loadUnreadCount();
-    loadPendingRequests();
+    loadNotificationCount();
 
     // Subscribe to message changes
     const messagesChannel = supabase
@@ -40,14 +40,38 @@ const BottomNav = () => {
           table: 'friend_requests'
         },
         () => {
-          loadPendingRequests();
+          loadNotificationCount();
         }
       )
       .subscribe();
 
+    // Subscribe to relationship changes (proposals / responses)
+    const relationshipsChannel = supabase
+      .channel('relationships-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'relationships'
+        },
+        () => {
+          loadNotificationCount();
+        }
+      )
+      .subscribe();
+
+    // Listen for notifications viewed events from Notifications page
+    const onNotificationsViewed = () => {
+      loadNotificationCount();
+    };
+    window.addEventListener('notifications:viewed', onNotificationsViewed);
+
     return () => {
       supabase.removeChannel(messagesChannel);
       supabase.removeChannel(requestsChannel);
+      supabase.removeChannel(relationshipsChannel);
+      window.removeEventListener('notifications:viewed', onNotificationsViewed);
     };
   }, []);
 
@@ -68,27 +92,52 @@ const BottomNav = () => {
     }
   };
 
-  const loadPendingRequests = async () => {
+  const loadNotificationCount = async () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      const { count } = await supabase
+      let lastViewedAt = localStorage.getItem('notifications_last_viewed_at');
+      if (!lastViewedAt) {
+        lastViewedAt = new Date().toISOString();
+        localStorage.setItem('notifications_last_viewed_at', lastViewedAt);
+        setNotificationsCount(0);
+        return;
+      }
+
+      // New friend requests received since last viewed
+      const { count: newRequests } = await supabase
         .from('friend_requests')
         .select('*', { count: 'exact', head: true })
         .eq('receiver_id', user.id)
-        .eq('status', 'pending');
+        .gt('created_at', lastViewedAt);
 
-      setPendingRequestsCount(count || 0);
+      // Responses to requests I sent since last viewed (accepted/rejected)
+      const { count: requestResponses } = await supabase
+        .from('friend_requests')
+        .select('*', { count: 'exact', head: true })
+        .eq('sender_id', user.id)
+        .in('status', ['accepted', 'rejected'])
+        .gt('updated_at', lastViewedAt);
+
+      // Relationship events (proposals/accepts) since last viewed
+      const { count: relationshipEvents } = await supabase
+        .from('relationships')
+        .select('*', { count: 'exact', head: true })
+        .or(`user_id.eq.${user.id},partner_id.eq.${user.id}`)
+        .gt('updated_at', lastViewedAt);
+
+      const total = (newRequests || 0) + (requestResponses || 0) + (relationshipEvents || 0);
+      setNotificationsCount(total);
     } catch (error) {
-      console.error('Error loading pending requests:', error);
+      console.error('Error loading notifications count:', error);
     }
   };
 
   const navItems = [
     { path: "/feed", icon: Home, label: "Home" },
     { path: "/discover", icon: Compass, label: "Discover" },
-    { path: "/notifications", icon: Bell, label: "Notifications", badge: pendingRequestsCount },
+    { path: "/notifications", icon: Bell, label: "Notifications", badge: notificationsCount },
     { path: "/chat", icon: MessageCircle, label: "Chat", badge: unreadCount },
     { path: "/profile", icon: User, label: "Profile" },
   ];
