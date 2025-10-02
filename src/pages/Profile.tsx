@@ -67,6 +67,7 @@ const Profile = () => {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
   const [friendsCount, setFriendsCount] = useState(0);
+  const [giftsCount, setGiftsCount] = useState(0);
   const [showEditProfile, setShowEditProfile] = useState(false);
   const [showFriends, setShowFriends] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
@@ -92,6 +93,7 @@ const Profile = () => {
 
   useEffect(() => {
     loadFriendsCount();
+    loadGiftsCount();
     loadRelationship();
     loadPosts();
     loadMilestones();
@@ -110,6 +112,19 @@ const Profile = () => {
       setFriendsCount(count || 0);
     } catch (error: any) {
       console.error('Error loading friends count:', error);
+    }
+  };
+
+  const loadGiftsCount = async () => {
+    if (!profile) return;
+    try {
+      const { count } = await supabase
+        .from('user_gifts')
+        .select('*', { count: 'exact', head: true })
+        .eq('receiver_id', profile.id);
+      setGiftsCount(count || 0);
+    } catch (error) {
+      console.error('Error loading gifts count:', error);
     }
   };
 
@@ -270,27 +285,6 @@ const Profile = () => {
       </div>
     );
   }
-
-  const [giftsCount, setGiftsCount] = useState(0);
-
-  useEffect(() => {
-    if (profile) {
-      loadGiftsCount();
-    }
-  }, [profile]);
-
-  const loadGiftsCount = async () => {
-    if (!profile) return;
-    try {
-      const { count } = await supabase
-        .from('user_gifts')
-        .select('*', { count: 'exact', head: true })
-        .eq('receiver_id', profile.id);
-      setGiftsCount(count || 0);
-    } catch (error) {
-      console.error('Error loading gifts count:', error);
-    }
-  };
 
   const stats = {
     posts: posts.length,
