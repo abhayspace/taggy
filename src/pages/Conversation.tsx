@@ -386,29 +386,29 @@ const Conversation = () => {
   return (
     <div className="h-screen flex flex-col bg-background">
       {/* Header */}
-      <div className="bg-gradient-to-r from-primary via-secondary to-accent p-5 flex items-center gap-4 shadow-lg animate-fade-in">
+      <div className="bg-background p-5 flex items-center gap-4 border-b border-border animate-fade-in">
         <Button
           variant="ghost"
           size="icon"
           onClick={() => navigate('/chat')}
-          className="text-white hover:bg-white/20 rounded-full"
+          className="rounded-full hover:bg-accent"
         >
           <ArrowLeft className="w-5 h-5" />
         </Button>
         
         {otherUser && (
           <>
-            <Avatar className="w-12 h-12 border-2 border-white/50 shadow-lg">
+            <Avatar className="w-12 h-12 border-2 border-primary/20 shadow-sm">
               <AvatarImage src={otherUser.profile_picture_url || defaultAvatar} />
               <AvatarFallback className="bg-gradient-primary text-primary-foreground">
                 {(otherUser.display_name || otherUser.username)[0].toUpperCase()}
               </AvatarFallback>
             </Avatar>
             <div className="flex-1">
-              <h2 className="font-bold text-white text-lg">
+              <h2 className="font-bold text-foreground text-lg">
                 {otherUser.display_name || otherUser.username}
               </h2>
-              <p className="text-sm text-white/80">
+              <p className="text-sm text-muted-foreground">
                 @{otherUser.username}
                 {relationship?.responded_at && " 💕"}
               </p>
@@ -418,7 +418,8 @@ const Conversation = () => {
             <Button
               onClick={() => initiateCall(otherUser.id, conversationId!, 'voice')}
               size="sm"
-              className="rounded-full bg-white/20 hover:bg-white/30 text-white border-2 border-white/50"
+              variant="ghost"
+              className="rounded-full hover:bg-accent"
             >
               <Phone className="w-4 h-4" />
             </Button>
@@ -426,7 +427,8 @@ const Conversation = () => {
             <Button
               onClick={() => initiateCall(otherUser.id, conversationId!, 'video')}
               size="sm"
-              className="rounded-full bg-white/20 hover:bg-white/30 text-white border-2 border-white/50"
+              variant="ghost"
+              className="rounded-full hover:bg-accent"
             >
               <Video className="w-4 h-4" />
             </Button>
@@ -435,7 +437,8 @@ const Conversation = () => {
             <Button
               onClick={() => setShowGiftDialog(true)}
               size="sm"
-              className="rounded-full bg-white/20 hover:bg-white/30 text-white border-2 border-white/50"
+              variant="ghost"
+              className="rounded-full hover:bg-accent"
             >
               <Gift className="w-4 h-4" />
             </Button>
@@ -454,7 +457,8 @@ const Conversation = () => {
               <Button
                 onClick={() => setShowProposalDialog(true)}
                 size="sm"
-                className="rounded-full bg-white/20 hover:bg-white/30 text-white border-2 border-white/50"
+                variant="ghost"
+                className="rounded-full hover:bg-accent"
               >
                 <Heart className="w-4 h-4 mr-2" />
                 Propose
@@ -464,14 +468,15 @@ const Conversation = () => {
               <Button
                 onClick={() => setShowResponseDialog(true)}
                 size="sm"
-                className="rounded-full bg-white/20 hover:bg-white/30 text-white border-2 border-white/50 animate-pulse"
+                variant="ghost"
+                className="rounded-full bg-primary/10 hover:bg-primary/20 animate-pulse"
               >
                 <Heart className="w-4 h-4 mr-2" />
                 Respond
               </Button>
             )}
             {relationship && !relationship.responded_at && relationship.user_id === currentUserId && (
-              <Badge className="bg-white/20 text-white border-white/50">
+              <Badge variant="secondary">
                 Proposal Sent
               </Badge>
             )}

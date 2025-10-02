@@ -393,9 +393,13 @@ const Profile = () => {
             <p className="text-3xl font-bold bg-gradient-primary bg-clip-text text-transparent mb-1">{stats.friends}</p>
             <p className="text-sm font-medium text-muted-foreground">Friends</p>
           </Card>
-          <Card className="p-5 text-center rounded-2xl bg-card/50 backdrop-blur-sm border-2 border-primary/10 hover:shadow-lg transition-all hover:scale-105 animate-fade-in" style={{ animationDelay: '100ms' }}>
+          <Card 
+            onClick={() => setActiveTab("collection")}
+            className="p-5 text-center rounded-2xl bg-card/50 backdrop-blur-sm border-2 border-primary/10 hover:shadow-lg transition-all hover:scale-105 animate-fade-in cursor-pointer" 
+            style={{ animationDelay: '100ms' }}
+          >
             <p className="text-3xl font-bold bg-gradient-primary bg-clip-text text-transparent mb-1">{stats.collections}</p>
-            <p className="text-xs font-medium text-muted-foreground">Collections</p>
+            <p className="text-xs font-medium text-muted-foreground">Gifts</p>
           </Card>
         </div>
 
@@ -437,22 +441,8 @@ const Profile = () => {
                 : "text-muted-foreground hover:text-foreground"
             }`}
           >
-            <Bookmark className="w-4 h-4" />
-            Collection
-            {activeTab === "collection" && (
-              <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-primary rounded-full" />
-            )}
-          </button>
-          <button
-            onClick={() => setActiveTab("gifts")}
-            className={`flex items-center gap-2 pb-4 px-2 text-xs font-medium transition-all relative ${
-              activeTab === "gifts"
-                ? "text-primary"
-                : "text-muted-foreground hover:text-foreground"
-            }`}
-          >
             🎁 Gifts
-            {activeTab === "gifts" && (
+            {activeTab === "collection" && (
               <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-primary rounded-full" />
             )}
           </button>
@@ -548,16 +538,7 @@ const Profile = () => {
           )
         )}
 
-        {activeTab === "collection" && (
-          <div className="text-center py-16 animate-fade-in">
-            <div className="bg-gradient-to-br from-primary/10 to-accent/10 w-24 h-24 rounded-full flex items-center justify-center mx-auto mb-4">
-              <Bookmark className="w-12 h-12 text-primary" />
-            </div>
-            <p className="text-lg text-muted-foreground">No saved posts yet</p>
-          </div>
-        )}
-
-        {activeTab === "gifts" && profile && (
+        {activeTab === "collection" && profile && (
           <GiftCollectionTab userId={profile.id} />
         )}
       </div>

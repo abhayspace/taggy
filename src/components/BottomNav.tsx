@@ -1,7 +1,6 @@
 import { Home, Compass, MessageCircle, User, Bell } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { useState, useEffect } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { NotificationBadge } from "./NotificationBadge";
 
 const BottomNav = () => {
   const location = useLocation();
@@ -26,13 +25,17 @@ const BottomNav = () => {
             <button
               key={item.path}
               onClick={() => navigate(item.path)}
-              className={`flex flex-col items-center justify-center gap-1 px-4 py-2 transition-all ${
+              className={`flex flex-col items-center justify-center gap-1 px-4 py-2 transition-all relative ${
                 isActive ? "text-primary scale-110" : "text-muted-foreground"
               }`}
             >
-              <Icon 
-                className={`w-6 h-6 ${isActive ? "fill-primary" : ""}`}
-              />
+              <div className="relative">
+                <Icon 
+                  className={`w-6 h-6 ${isActive ? "fill-primary" : ""}`}
+                />
+                {item.path === "/notifications" && <NotificationBadge type="notifications" />}
+                {item.path === "/chat" && <NotificationBadge type="chat" />}
+              </div>
               <span className="text-xs font-medium">{item.label}</span>
               {isActive && (
                 <div className="w-1 h-1 rounded-full bg-primary" />
