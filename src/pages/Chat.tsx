@@ -11,6 +11,17 @@ import { useNavigate } from "react-router-dom";
 import defaultAvatar from "@/assets/default-avatar.png";
 import { formatDistanceToNow } from "date-fns";
 import { StartChatDialog } from "@/components/StartChatDialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import BottomNav from "@/components/BottomNav";
 
 interface ChatData {
   conversation_id: string;
@@ -34,6 +45,9 @@ const Chat = () => {
   const [loading, setLoading] = useState(true);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [showStartChat, setShowStartChat] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [conversationToDelete, setConversationToDelete] = useState<string | null>(null);
+  const [longPressTimer, setLongPressTimer] = useState<NodeJS.Timeout | null>(null);
   const { toast } = useToast();
   const navigate = useNavigate();
 
@@ -142,19 +156,55 @@ const Chat = () => {
     }
   };
 
-  const deleteConversation = async (conversationId: string) => {
-    try {
-      const { error } = await supabase
-        .from('conversations')
-        .delete()
-        .eq('id', conversationId);
+  const handleLongPressStart = (conversationId: string) => {
+    const timer = setTimeout(() => {
+      setConversationToDelete(conversationId);
+      setDeleteDialogOpen(true);
+    }, 500); // 500ms long press
+    setLongPressTimer(timer);
+  };
 
-      if (error) throw error;
+  const handleLongPressEnd = () => {
+    if (longPressTimer) {
+      clearTimeout(longPressTimer);
+      setLongPressTimer(null);
+    }
+  };
+
+  const deleteConversation = async () => {
+    if (!conversationToDelete) return;
+
+    try {
+      // Delete all messages in the conversation
+      const { error: messagesError } = await supabase
+        .from("messages")
+        .delete()
+        .eq("conversation_id", conversationToDelete);
+
+      if (messagesError) throw messagesError;
+
+      // Delete conversation participants
+      const { error: participantsError } = await supabase
+        .from("conversation_participants")
+        .delete()
+        .eq("conversation_id", conversationToDelete);
+
+      if (participantsError) throw participantsError;
+
+      // Delete the conversation
+      const { error: conversationError } = await supabase
+        .from("conversations")
+        .delete()
+        .eq("id", conversationToDelete);
+
+      if (conversationError) throw conversationError;
 
       toast({
         title: "Conversation deleted",
       });
 
+      setDeleteDialogOpen(false);
+      setConversationToDelete(null);
       loadChats();
     } catch (error: any) {
       toast({
@@ -230,14 +280,17 @@ const Chat = () => {
           filteredChats.map((chat, index) => (
             <Card
               key={chat.conversation_id}
-              className="p-5 rounded-3xl hover:shadow-lg hover:scale-[1.02] transition-all bg-card/50 backdrop-blur-sm border border-primary/10 animate-fade-in hover:border-primary/30 group"
+              className="p-5 rounded-3xl hover:shadow-lg hover:scale-[1.02] transition-all bg-card/50 backdrop-blur-sm border border-primary/10 animate-fade-in hover:border-primary/30 active:bg-accent/50 select-none"
               style={{ animationDelay: `${index * 50}ms` }}
+              onClick={() => navigate(`/conversation/${chat.conversation_id}`)}
+              onMouseDown={() => handleLongPressStart(chat.conversation_id)}
+              onMouseUp={handleLongPressEnd}
+              onMouseLeave={handleLongPressEnd}
+              onTouchStart={() => handleLongPressStart(chat.conversation_id)}
+              onTouchEnd={handleLongPressEnd}
             >
               <div className="flex items-center gap-4">
-                <div
-                  onClick={() => navigate(`/conversation/${chat.conversation_id}`)}
-                  className="flex items-center gap-4 flex-1 min-w-0 cursor-pointer"
-                >
+                <div className="flex items-center gap-4 flex-1 min-w-0">
                   <div className="relative">
                     <Avatar className="w-16 h-16 border-2 border-primary/20 shadow-md">
                       <AvatarImage src={chat.other_user.profile_picture_url || defaultAvatar} />
@@ -266,18 +319,6 @@ const Chat = () => {
                     </p>
                   </div>
                 </div>
-
-                <Button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    deleteConversation(chat.conversation_id);
-                  }}
-                  variant="ghost"
-                  size="icon"
-                  className="opacity-0 group-hover:opacity-100 transition-opacity"
-                >
-                  <Trash2 className="w-5 h-5 text-destructive" />
-                </Button>
               </div>
             </Card>
           ))
@@ -287,8 +328,31 @@ const Chat = () => {
       {/* Start Chat Dialog */}
       <StartChatDialog
         open={showStartChat}
-        onOpenChange={setShowStartChat}
+        onOpenChange={(open) => {
+          setShowStartChat(open);
+          if (!open) loadChats();
+        }}
       />
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Conversation</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this conversation? This will permanently delete all messages.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setConversationToDelete(null)}>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={deleteConversation} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <BottomNav />
     </div>
   );
 };

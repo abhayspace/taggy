@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -6,7 +6,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Loader2, X } from "lucide-react";
+import { Loader2, X, Upload } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
@@ -35,6 +35,8 @@ export const EditProfileDialog = ({ open, onOpenChange, profile, onProfileUpdate
   const [interests, setInterests] = useState<string[]>(profile.interests || []);
   const [newInterest, setNewInterest] = useState("");
   const [loading, setLoading] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -56,6 +58,65 @@ export const EditProfileDialog = ({ open, onOpenChange, profile, onProfileUpdate
 
   const handleRemoveInterest = (interest: string) => {
     setInterests(interests.filter((i) => i !== interest));
+  };
+
+  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      toast({
+        title: "Invalid file type",
+        description: "Please upload an image file",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Validate file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      toast({
+        title: "File too large",
+        description: "Please upload an image smaller than 5MB",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setUploading(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Not authenticated");
+
+      const fileExt = file.name.split('.').pop();
+      const filePath = `${user.id}/${Date.now()}.${fileExt}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('avatars')
+        .upload(filePath, file);
+
+      if (uploadError) throw uploadError;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('avatars')
+        .getPublicUrl(filePath);
+
+      setProfilePictureUrl(publicUrl);
+      
+      toast({
+        title: "Success",
+        description: "Profile picture uploaded successfully",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Error uploading image",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setUploading(false);
+    }
   };
 
   const handleSubmit = async () => {
@@ -151,13 +212,34 @@ export const EditProfileDialog = ({ open, onOpenChange, profile, onProfileUpdate
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="profile-picture">Profile Picture URL</Label>
-            <Input
-              id="profile-picture"
-              value={profilePictureUrl}
-              onChange={(e) => setProfilePictureUrl(e.target.value)}
-              placeholder="https://example.com/image.jpg"
-            />
+            <Label htmlFor="profile-picture">Profile Picture</Label>
+            <div className="flex gap-2">
+              <Input
+                id="profile-picture"
+                value={profilePictureUrl}
+                onChange={(e) => setProfilePictureUrl(e.target.value)}
+                placeholder="https://example.com/image.jpg or upload file"
+              />
+              <input
+                type="file"
+                ref={fileInputRef}
+                onChange={handleFileUpload}
+                accept="image/*"
+                className="hidden"
+              />
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={uploading}
+              >
+                {uploading ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <Upload className="w-4 h-4" />
+                )}
+              </Button>
+            </div>
           </div>
 
           <div className="space-y-2">
