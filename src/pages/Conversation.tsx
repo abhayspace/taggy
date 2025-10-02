@@ -40,7 +40,10 @@ interface Relationship {
   id: string;
   user_id: string;
   partner_id: string;
-  status: 'pending' | 'accepted' | 'rejected';
+  created_at: string;
+  updated_at: string;
+  proposed_at: string;
+  responded_at: string | null;
 }
 
 const Conversation = () => {
@@ -316,7 +319,7 @@ const Conversation = () => {
               </h2>
               <p className="text-sm text-white/80">
                 @{otherUser.username}
-                {relationship?.status === 'accepted' && " 💕"}
+                {relationship?.responded_at && " 💕"}
               </p>
             </div>
 
@@ -331,7 +334,7 @@ const Conversation = () => {
                 Propose
               </Button>
             )}
-            {relationship?.status === 'pending' && relationship.partner_id === currentUserId && (
+            {relationship && !relationship.responded_at && relationship.partner_id === currentUserId && (
               <Button
                 onClick={() => setShowResponseDialog(true)}
                 size="sm"
@@ -341,7 +344,7 @@ const Conversation = () => {
                 Respond
               </Button>
             )}
-            {relationship?.status === 'pending' && relationship.user_id === currentUserId && (
+            {relationship && !relationship.responded_at && relationship.user_id === currentUserId && (
               <Badge className="bg-white/20 text-white border-white/50">
                 Proposal Sent
               </Badge>

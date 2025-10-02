@@ -15,7 +15,10 @@ interface Relationship {
   id: string;
   user_id: string;
   partner_id: string;
-  status: 'pending' | 'accepted' | 'rejected';
+  created_at: string;
+  updated_at: string;
+  proposed_at: string;
+  responded_at: string | null;
   partner_profile?: {
     display_name: string | null;
     username: string;
@@ -121,7 +124,7 @@ const Profile = () => {
           user_profile:profiles!relationships_user_id_fkey(display_name, username)
         `)
         .or(`user_id.eq.${profile.id},partner_id.eq.${profile.id}`)
-        .eq('status', 'accepted')
+        .not('responded_at', 'is', null)
         .maybeSingle();
 
       if (relationshipData) {
@@ -168,69 +171,74 @@ const Profile = () => {
 
   return (
     <div className="min-h-screen bg-background pb-20 overflow-auto">
-      {/* Header with gradient and pattern */}
-      <div className="relative h-48 bg-gradient-to-br from-primary via-secondary to-accent overflow-hidden">
-        <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiNmZmYiIGZpbGwtb3BhY2l0eT0iMC4xIj48cGF0aCBkPSJNMzYgMzRjMC0yIDItNCAyLTRzMiAyIDIgNHYyYzAgMiAyIDQgMiA0czIgMiA0IDJ2MmMwIDItMiA0LTIgNHMtMiAyLTQgMkg0MGMtMi0yLTItNC0yLTR2LTJjMC0yIDItNCAxLTRzMi0yIDItNHYtMnoiLz48L2c+PC9nPjwvc3ZnPg==')] opacity-20"></div>
-        <Button
-          onClick={handleLogout}
-          variant="ghost"
-          className="absolute top-6 right-6 text-white hover:bg-white/20 backdrop-blur-sm rounded-full"
-        >
-          <LogOut className="w-5 h-5 mr-2" />
-          Logout
-        </Button>
-      </div>
+      {/* Header */}
+      <div className="p-6 space-y-6">
+        <div className="flex items-center justify-between">
+          <div className="space-y-1">
+            <h1 className="text-3xl font-bold bg-gradient-primary bg-clip-text text-transparent">
+              Profile
+            </h1>
+            <p className="text-muted-foreground">Manage your account</p>
+          </div>
+          <Button
+            onClick={handleLogout}
+            variant="outline"
+            className="rounded-full"
+          >
+            <LogOut className="w-5 h-5 mr-2" />
+            Logout
+          </Button>
+        </div>
 
-      {/* Profile Card */}
-      <div className="px-6 -mt-20 relative z-10 animate-fade-in">
-        <Card className="p-6 rounded-3xl bg-card/95 backdrop-blur-md border-2 border-primary/20 shadow-2xl">
-          <div className="flex items-start gap-4 mb-6">
-            <Avatar className="w-24 h-24 border-4 border-background shadow-2xl ring-4 ring-primary/20">
+        {/* Profile Card */}
+        <Card className="p-6 rounded-3xl bg-card/50 backdrop-blur-sm border-2 border-primary/10 hover:shadow-glow-primary transition-all">
+          <div className="flex flex-col items-center text-center mb-6">
+            <Avatar className="w-28 h-28 border-4 border-primary/20 shadow-lg mb-4">
               <AvatarImage src={profile.profile_picture_url || defaultAvatar} />
-              <AvatarFallback className="text-3xl bg-muted">
+              <AvatarFallback className="text-3xl bg-gradient-primary text-primary-foreground">
                 {profile.username?.[0]?.toUpperCase() || "U"}
               </AvatarFallback>
             </Avatar>
 
-            <div className="flex-1">
-              <h1 className="text-2xl font-bold bg-gradient-primary bg-clip-text text-transparent">
-                {profile.display_name || profile.username}
-              </h1>
-              <p className="text-sm text-muted-foreground">@{profile.username}</p>
-            </div>
+            <h2 className="text-2xl font-bold mb-1">
+              {profile.display_name || profile.username}
+            </h2>
+            <p className="text-sm text-muted-foreground mb-4">@{profile.username}</p>
 
             <Button 
               onClick={() => setShowEditProfile(true)}
               size="sm"
-              className="rounded-full bg-gradient-secondary hover:scale-105 transition-transform"
+              className="rounded-full bg-gradient-primary hover:scale-105 transition-transform"
             >
               <Settings className="w-4 h-4 mr-2" />
-              Edit
+              Edit Profile
             </Button>
           </div>
 
           {/* Bio and Details */}
-          <div className="mb-6">
-            <p className="text-sm text-muted-foreground mb-2 flex items-center gap-2 flex-wrap">
+          <div className="space-y-4">
+            <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground flex-wrap">
               {profile.age && <span>{profile.age} years old</span>}
               {profile.age && profile.gender && <span>•</span>}
               {profile.gender && <span className="capitalize">{profile.gender.replace('_', ' ')}</span>}
-            </p>
+            </div>
 
             {/* Relationship Status */}
             {relationship && (
-              <Badge className="mb-4 bg-gradient-to-r from-primary to-secondary text-primary-foreground px-4 py-2 text-sm">
-                💕 In a relationship with {relationship.partner_profile?.display_name || relationship.partner_profile?.username}
-              </Badge>
+              <div className="flex justify-center">
+                <Badge className="bg-gradient-to-r from-primary to-secondary text-primary-foreground px-4 py-2 text-sm rounded-full">
+                  💕 In a relationship with {relationship.partner_profile?.display_name || relationship.partner_profile?.username}
+                </Badge>
+              </div>
             )}
 
-            <p className="text-foreground/80 mb-4 leading-relaxed">
+            <p className="text-foreground/80 leading-relaxed text-center px-4">
               {profile.bio || "No bio yet ✨"}
             </p>
 
             {/* Interests */}
             {profile.interests && profile.interests.length > 0 && (
-              <div className="flex flex-wrap gap-2">
+              <div className="flex flex-wrap gap-2 justify-center">
                 {profile.interests.map((interest, index) => (
                   <Badge
                     key={interest}
@@ -246,63 +254,63 @@ const Profile = () => {
         </Card>
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-3 gap-4 my-6">
-          <Card className="p-5 text-center rounded-2xl bg-gradient-to-br from-primary/10 to-primary/5 border-2 border-primary/20 hover:shadow-glow-primary transition-all hover:scale-105 animate-fade-in">
+        <div className="grid grid-cols-3 gap-4">
+          <Card className="p-5 text-center rounded-2xl bg-card/50 backdrop-blur-sm border-2 border-primary/10 hover:shadow-lg transition-all hover:scale-105 animate-fade-in">
             <p className="text-3xl font-bold bg-gradient-primary bg-clip-text text-transparent mb-1">{stats.posts}</p>
             <p className="text-sm font-medium text-muted-foreground">Posts</p>
           </Card>
           <Card 
             onClick={() => setShowFriends(true)}
-            className="p-5 text-center rounded-2xl bg-gradient-to-br from-secondary/10 to-secondary/5 border-2 border-secondary/20 hover:shadow-glow-secondary transition-all hover:scale-105 animate-fade-in cursor-pointer" 
+            className="p-5 text-center rounded-2xl bg-card/50 backdrop-blur-sm border-2 border-primary/10 hover:shadow-lg transition-all hover:scale-105 animate-fade-in cursor-pointer" 
             style={{ animationDelay: '50ms' }}
           >
-            <p className="text-3xl font-bold bg-gradient-secondary bg-clip-text text-transparent mb-1">{stats.friends}</p>
+            <p className="text-3xl font-bold bg-gradient-primary bg-clip-text text-transparent mb-1">{stats.friends}</p>
             <p className="text-sm font-medium text-muted-foreground">Friends</p>
           </Card>
-          <Card className="p-5 text-center rounded-2xl bg-gradient-to-br from-accent/10 to-accent/5 border-2 border-accent/20 hover:shadow-glow-accent transition-all hover:scale-105 animate-fade-in" style={{ animationDelay: '100ms' }}>
-            <p className="text-3xl font-bold bg-gradient-accent bg-clip-text text-transparent mb-1">{stats.stories}</p>
+          <Card className="p-5 text-center rounded-2xl bg-card/50 backdrop-blur-sm border-2 border-primary/10 hover:shadow-lg transition-all hover:scale-105 animate-fade-in" style={{ animationDelay: '100ms' }}>
+            <p className="text-3xl font-bold bg-gradient-primary bg-clip-text text-transparent mb-1">{stats.stories}</p>
             <p className="text-sm font-medium text-muted-foreground">Stories</p>
           </Card>
         </div>
 
         {/* Tab Navigation */}
-        <div className="flex gap-6 border-b-2 mb-6 animate-fade-in" style={{ animationDelay: '150ms' }}>
+        <div className="flex gap-6 border-b-2 mb-4 animate-fade-in" style={{ animationDelay: '150ms' }}>
           <button
             onClick={() => setActiveTab("posts")}
-            className={`flex items-center gap-2 pb-4 px-2 font-bold transition-all relative ${
+            className={`flex items-center gap-2 pb-4 px-2 font-semibold transition-all relative ${
               activeTab === "posts"
-                ? "text-primary scale-105"
+                ? "text-primary"
                 : "text-muted-foreground hover:text-foreground"
             }`}
           >
             <Grid3x3 className="w-5 h-5" />
             Posts
             {activeTab === "posts" && (
-              <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-primary rounded-full shadow-glow-primary" />
+              <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-primary rounded-full" />
             )}
           </button>
           <button
             onClick={() => setActiveTab("tagged")}
-            className={`flex items-center gap-2 pb-4 px-2 font-bold transition-all relative ${
+            className={`flex items-center gap-2 pb-4 px-2 font-semibold transition-all relative ${
               activeTab === "tagged"
-                ? "text-primary scale-105"
+                ? "text-primary"
                 : "text-muted-foreground hover:text-foreground"
             }`}
           >
             <Users className="w-5 h-5" />
             Tagged
             {activeTab === "tagged" && (
-              <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-primary rounded-full shadow-glow-primary" />
+              <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-primary rounded-full" />
             )}
           </button>
         </div>
 
         {/* Posts Grid */}
-        <div className="grid grid-cols-3 gap-3 pb-6">
+        <div className="grid grid-cols-3 gap-3 pb-4">
           {[1, 2, 3, 4, 5, 6].map((i) => (
             <div
               key={i}
-              className="aspect-square rounded-2xl bg-gradient-to-br from-primary/5 to-secondary/5 hover:from-primary/10 hover:to-secondary/10 border border-primary/10 hover:border-primary/30 transition-all hover:scale-105 cursor-pointer animate-fade-in"
+              className="aspect-square rounded-2xl bg-card/50 backdrop-blur-sm border border-primary/10 hover:border-primary/30 transition-all hover:scale-105 cursor-pointer animate-fade-in"
               style={{ animationDelay: `${i * 50}ms` }}
             />
           ))}
