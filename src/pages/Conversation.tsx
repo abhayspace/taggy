@@ -167,14 +167,19 @@ const Conversation = () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      const { data: relationshipData } = await supabase
+      const { data: relationshipData, error } = await supabase
         .from('relationships')
         .select('*')
         .or(`user_id.eq.${user.id},partner_id.eq.${user.id}`)
         .maybeSingle();
 
+      if (error) {
+        console.error('Error loading relationship:', error);
+        return;
+      }
+
       if (relationshipData) {
-        setRelationship(relationshipData);
+        setRelationship(relationshipData as any);
       }
     } catch (error: any) {
       console.error('Error loading relationship:', error);
