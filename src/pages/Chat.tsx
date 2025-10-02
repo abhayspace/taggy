@@ -21,7 +21,6 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import BottomNav from "@/components/BottomNav";
 
 interface ChatData {
   conversation_id: string;
@@ -351,8 +350,6 @@ const Chat = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-
-      <BottomNav />
     </div>
   );
 };
