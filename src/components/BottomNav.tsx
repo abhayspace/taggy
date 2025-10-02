@@ -88,8 +88,8 @@ const BottomNav = () => {
   const navItems = [
     { path: "/feed", icon: Home, label: "Home" },
     { path: "/discover", icon: Compass, label: "Discover" },
-    { path: "/notifications", icon: Bell, label: "Notifications", badge: pendingRequestsCount, showDot: true },
-    { path: "/chat", icon: MessageCircle, label: "Chat", badge: unreadCount, showDot: true },
+    { path: "/notifications", icon: Bell, label: "Notifications", badge: pendingRequestsCount },
+    { path: "/chat", icon: MessageCircle, label: "Chat", badge: unreadCount },
     { path: "/profile", icon: User, label: "Profile" },
   ];
 
@@ -112,8 +112,12 @@ const BottomNav = () => {
                 <Icon 
                   className={`w-6 h-6 ${isActive ? "fill-primary" : ""}`}
                 />
-                {item.badge && item.badge > 0 && item.showDot && (
-                  <div className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-destructive rounded-full" />
+                {item.badge !== undefined && item.badge > 0 && (
+                  <div className="absolute -top-2 -right-2 min-w-[20px] h-5 px-1.5 bg-gradient-to-r from-red-500 to-pink-500 rounded-full flex items-center justify-center animate-scale-in shadow-lg">
+                    <span className="text-[10px] font-bold text-white">
+                      {item.badge > 99 ? '99+' : item.badge}
+                    </span>
+                  </div>
                 )}
               </div>
               <span className="text-xs font-medium">{item.label}</span>
