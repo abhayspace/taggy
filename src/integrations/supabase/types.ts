@@ -311,7 +311,6 @@ export type Database = {
           partner_id: string
           proposed_at: string
           responded_at: string | null
-          status: Database["public"]["Enums"]["relationship_status"]
           updated_at: string
           user_id: string
         }
@@ -321,7 +320,6 @@ export type Database = {
           partner_id: string
           proposed_at?: string
           responded_at?: string | null
-          status?: Database["public"]["Enums"]["relationship_status"]
           updated_at?: string
           user_id: string
         }
@@ -331,7 +329,6 @@ export type Database = {
           partner_id?: string
           proposed_at?: string
           responded_at?: string | null
-          status?: Database["public"]["Enums"]["relationship_status"]
           updated_at?: string
           user_id?: string
         }
