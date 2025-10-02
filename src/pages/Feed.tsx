@@ -10,6 +10,7 @@ import defaultAvatar from "@/assets/default-avatar.png";
 import { AddPostDialog } from "@/components/AddPostDialog";
 import { AddStoryDialog } from "@/components/AddStoryDialog";
 import { PostCommentsDialog } from "@/components/PostCommentsDialog";
+import { StoryViewer } from "@/components/StoryViewer";
 import { formatDistanceToNow } from "date-fns";
 
 interface Post {
@@ -48,6 +49,8 @@ const Feed = () => {
   const [showAddPost, setShowAddPost] = useState(false);
   const [showAddStory, setShowAddStory] = useState(false);
   const [selectedPostForComments, setSelectedPostForComments] = useState<string | null>(null);
+  const [storyViewerOpen, setStoryViewerOpen] = useState(false);
+  const [storyIndex, setStoryIndex] = useState(0);
   const { toast } = useToast();
   const navigate = useNavigate();
 
@@ -206,10 +209,11 @@ const Feed = () => {
           </div>
 
           {/* User Stories */}
-          {stories.map((story) => (
+          {stories.map((story, index) => (
             <div
               key={story.id}
               className="flex flex-col items-center gap-2 cursor-pointer"
+              onClick={() => { setStoryIndex(index); setStoryViewerOpen(true); }}
             >
               <div className="relative ring-2 ring-gradient-accent ring-offset-2 ring-offset-background rounded-full p-1">
                 <Avatar className="w-16 h-16">
@@ -337,6 +341,14 @@ const Feed = () => {
           open={!!selectedPostForComments}
           onOpenChange={(open) => !open && setSelectedPostForComments(null)}
           postId={selectedPostForComments}
+        />
+      )}
+      {storyViewerOpen && (
+        <StoryViewer
+          open={storyViewerOpen}
+          onOpenChange={setStoryViewerOpen}
+          stories={stories}
+          initialIndex={storyIndex}
         />
       )}
     </div>
