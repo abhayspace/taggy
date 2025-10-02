@@ -14,8 +14,8 @@ const BottomNav = () => {
   ];
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 bg-gradient-rainbow backdrop-blur-xl border-t-4 border-primary/30 z-50 shadow-glow-rainbow">
-      <div className="flex justify-around items-center h-20 max-w-lg mx-auto">
+    <div className="fixed bottom-0 left-0 right-0 bg-card/80 backdrop-blur-xl border-t border-border z-50">
+      <div className="flex justify-around items-center h-16 max-w-lg mx-auto">
         {navItems.map((item) => {
           const isActive = location.pathname === item.path;
           const Icon = item.icon;

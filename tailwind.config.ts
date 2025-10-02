@@ -68,18 +68,11 @@ export default {
         'gradient-secondary': 'var(--gradient-secondary)',
         'gradient-accent': 'var(--gradient-accent)',
         'gradient-warm': 'var(--gradient-warm)',
-        'gradient-cool': 'var(--gradient-cool)',
-        'gradient-rainbow': 'var(--gradient-rainbow)',
-        'gradient-pink-yellow': 'var(--gradient-pink-yellow)',
-        'gradient-blue-pink': 'var(--gradient-blue-pink)',
       },
       boxShadow: {
         'glow-primary': 'var(--glow-primary)',
         'glow-secondary': 'var(--glow-secondary)',
         'glow-accent': 'var(--glow-accent)',
-        'glow-rainbow': 'var(--glow-rainbow)',
-        '3d': 'var(--shadow-3d)',
-        '3d-hover': 'var(--shadow-3d-hover)',
       },
       keyframes: {
         "accordion-down": {

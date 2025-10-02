@@ -3,7 +3,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Settings, Heart, Users, Grid3x3, LogOut, Loader2, Star, Sparkles } from "lucide-react";
+import { Settings, Heart, Users, Grid3x3, LogOut, Loader2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -30,23 +30,35 @@ const Profile = () => {
 
   useEffect(() => {
     loadProfile();
+
+    // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      if (event === 'SIGNED_OUT') navigate('/');
-      else if (session) loadProfile();
+      if (event === 'SIGNED_OUT') {
+        navigate('/');
+      } else if (session) {
+        loadProfile();
+      }
     });
+
     return () => subscription.unsubscribe();
   }, [navigate]);
 
   useEffect(() => {
-    if (profile) loadFriendsCount();
+    loadFriendsCount();
   }, [profile]);
 
   const loadFriendsCount = async () => {
     if (!profile) return;
+    
     try {
-      const { count } = await supabase.from('friends').select('*', { count: 'exact', head: true }).eq('user_id', profile.id);
+      const { count, error } = await supabase
+        .from('friends')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', profile.id);
+
+      if (error) throw error;
       setFriendsCount(count || 0);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error loading friends count:', error);
     }
   };
@@ -54,12 +66,27 @@ const Profile = () => {
   const loadProfile = async () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) { navigate('/'); return; }
-      const { data, error } = await supabase.from('profiles').select('*').eq('id', user.id).single();
+      
+      if (!user) {
+        navigate('/');
+        return;
+      }
+
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', user.id)
+        .single();
+
       if (error) throw error;
+      
       setProfile(data);
     } catch (error: any) {
-      toast({ title: "Error loading profile", description: error.message, variant: "destructive" });
+      toast({
+        title: "Error loading profile",
+        description: error.message,
+        variant: "destructive",
+      });
     } finally {
       setLoading(false);
     }
@@ -70,39 +97,81 @@ const Profile = () => {
     navigate('/');
   };
 
-  if (loading) return <div className="h-screen flex items-center justify-center bg-gradient-rainbow"><Loader2 className="w-12 h-12 animate-spin text-primary" /></div>;
-  if (!profile) return <div className="h-screen flex items-center justify-center"><p className="text-muted-foreground">Profile not found</p></div>;
+  if (loading) {
+    return (
+      <div className="h-screen flex items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if (!profile) {
+    return (
+      <div className="h-screen flex items-center justify-center">
+        <p className="text-muted-foreground">Profile not found</p>
+      </div>
+    );
+  }
+
+  const stats = {
+    posts: 0,
+    friends: friendsCount,
+    stories: 0,
+  };
 
   return (
-    <div className="h-full overflow-auto pb-20 bg-gradient-to-br from-background via-primary/5 to-accent/5">
-      {/* Header */}
-      <div className="bg-gradient-warm h-40 relative rounded-b-3xl shadow-glow-accent">
-        <Button onClick={handleLogout} className="absolute top-4 right-4 bg-white/20 backdrop-blur-sm text-white hover:bg-white/30 rounded-3xl font-bold">
-          <LogOut className="w-5 h-5 mr-2" />Logout
+    <div className="h-full overflow-auto pb-20">
+      {/* Header with gradient */}
+      <div className="bg-gradient-primary h-32 relative">
+        <Button
+          onClick={handleLogout}
+          variant="ghost"
+          className="absolute top-4 right-4 text-primary-foreground"
+        >
+          <LogOut className="w-5 h-5 mr-2" />
+          Logout
         </Button>
-        <div className="absolute top-4 left-4"><Heart className="w-8 h-8 text-white/40 floating-hearts" fill="currentColor" /></div>
-        <div className="absolute top-8 right-20"><Star className="w-6 h-6 text-white/30 floating-stars" fill="currentColor" /></div>
       </div>
 
+      {/* Profile Info */}
       <div className="px-6 -mt-16 relative z-10">
         <div className="flex items-end gap-4 mb-6">
-          <Avatar className="w-32 h-32 border-4 border-background shadow-3d card-3d">
+          <Avatar className="w-28 h-28 border-4 border-background shadow-glow-primary">
             <AvatarImage src={profile.profile_picture_url || defaultAvatar} />
-            <AvatarFallback className="text-4xl bg-gradient-primary font-extrabold">{profile.username?.[0]?.toUpperCase() || "U"}</AvatarFallback>
+            <AvatarFallback className="text-3xl bg-gradient-primary">
+              {profile.username?.[0]?.toUpperCase() || "U"}
+            </AvatarFallback>
           </Avatar>
-          <Button onClick={() => setShowEditProfile(true)} className="mb-2 rounded-3xl bg-gradient-secondary shadow-glow-secondary hover:scale-105 transition-all font-bold">
-            <Settings className="w-4 h-4 mr-2" />Edit Profile
+
+          <Button 
+            onClick={() => setShowEditProfile(true)}
+            className="mb-2 rounded-full bg-gradient-secondary shadow-glow-secondary hover:scale-105 transition-transform"
+          >
+            <Settings className="w-4 h-4 mr-2" />
+            Edit Profile
           </Button>
         </div>
 
+        {/* Username and Bio */}
         <div className="mb-6">
-          <h1 className="text-3xl font-extrabold mb-1">{profile.username}</h1>
-          {profile.age && <p className="text-base text-muted-foreground mb-1 font-semibold">🎂 {profile.age} years old</p>}
-          <p className="text-muted-foreground mb-3 text-base">{profile.bio || "No bio yet ✨"}</p>
+          <h1 className="text-2xl font-bold mb-1">{profile.username}</h1>
+          {profile.age && (
+            <p className="text-sm text-muted-foreground mb-1">{profile.age} years old</p>
+          )}
+          <p className="text-muted-foreground mb-3">
+            {profile.bio || "No bio yet ✨"}
+          </p>
+
+          {/* Interests */}
           {profile.interests && profile.interests.length > 0 && (
             <div className="flex flex-wrap gap-2 mb-4">
-              {profile.interests.map((interest, i) => (
-                <Badge key={interest} className="bg-gradient-accent text-accent-foreground rounded-3xl px-4 py-2 font-bold shadow-glow-accent animate-scale-in" style={{ animationDelay: `${i * 50}ms` }}>{interest}</Badge>
+              {profile.interests.map((interest) => (
+                <Badge
+                  key={interest}
+                  className="bg-gradient-accent text-accent-foreground rounded-full px-3 py-1"
+                >
+                  {interest}
+                </Badge>
               ))}
             </div>
           )}
@@ -110,47 +179,84 @@ const Profile = () => {
 
         {/* Stats */}
         <div className="grid grid-cols-3 gap-4 mb-6">
-          <Card className="p-5 text-center rounded-3xl card-3d border-3 border-primary/20 shadow-glow-primary">
-            <p className="text-3xl font-extrabold text-primary">0</p>
-            <p className="text-sm text-muted-foreground font-bold">Posts</p>
+          <Card className="p-4 text-center rounded-2xl bg-card/50 backdrop-blur-sm">
+            <p className="text-2xl font-bold text-primary">{stats.posts}</p>
+            <p className="text-sm text-muted-foreground">Posts</p>
           </Card>
-          <Card className="p-5 text-center rounded-3xl card-3d border-3 border-secondary/20 shadow-glow-secondary">
-            <p className="text-3xl font-extrabold text-secondary">{friendsCount}</p>
-            <p className="text-sm text-muted-foreground font-bold">Friends</p>
+          <Card className="p-4 text-center rounded-2xl bg-card/50 backdrop-blur-sm">
+            <p className="text-2xl font-bold text-secondary">{stats.friends}</p>
+            <p className="text-sm text-muted-foreground">Friends</p>
           </Card>
-          <Card className="p-5 text-center rounded-3xl card-3d border-3 border-accent/20 shadow-glow-accent">
-            <p className="text-3xl font-extrabold text-accent">0</p>
-            <p className="text-sm text-muted-foreground font-bold">Stories</p>
+          <Card className="p-4 text-center rounded-2xl bg-card/50 backdrop-blur-sm">
+            <p className="text-2xl font-bold text-accent">{stats.stories}</p>
+            <p className="text-sm text-muted-foreground">Stories</p>
           </Card>
         </div>
 
         {/* Relationship Status */}
-        <Card className="p-5 rounded-3xl mb-6 bg-gradient-warm/20 border-3 border-accent/30 card-3d shadow-glow-accent">
+        <Card className="p-4 rounded-2xl mb-6 bg-gradient-warm/10 border-accent/20">
           <div className="flex items-center gap-3">
-            <Heart className="w-8 h-8 text-accent animate-bounce-subtle" fill="currentColor" />
-            <div><p className="font-extrabold text-lg">Single 💫</p><p className="text-sm text-muted-foreground font-semibold">Not in a relationship</p></div>
+            <Heart className="w-6 h-6 text-accent" fill="currentColor" />
+            <div>
+              <p className="font-semibold">Single</p>
+              <p className="text-sm text-muted-foreground">Not in a relationship</p>
+            </div>
           </div>
         </Card>
 
         {/* Tab Navigation */}
-        <div className="flex gap-4 border-b-3 border-primary/20 mb-6">
-          {[{ tab: "posts" as const, icon: Grid3x3, label: "Posts" }, { tab: "tagged" as const, icon: Users, label: "Tagged" }].map(({ tab, icon: Icon, label }) => (
-            <button key={tab} onClick={() => setActiveTab(tab)} className={`flex items-center gap-2 pb-3 px-4 font-extrabold transition-all relative ${activeTab === tab ? "text-primary" : "text-muted-foreground"}`}>
-              <Icon className="w-5 h-5" />{label}
-              {activeTab === tab && <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-primary rounded-full shadow-glow-primary" />}
-            </button>
-          ))}
+        <div className="flex gap-4 border-b mb-6">
+          <button
+            onClick={() => setActiveTab("posts")}
+            className={`flex items-center gap-2 pb-3 px-4 font-semibold transition-colors relative ${
+              activeTab === "posts"
+                ? "text-primary"
+                : "text-muted-foreground"
+            }`}
+          >
+            <Grid3x3 className="w-5 h-5" />
+            Posts
+            {activeTab === "posts" && (
+              <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-primary rounded-full" />
+            )}
+          </button>
+          <button
+            onClick={() => setActiveTab("tagged")}
+            className={`flex items-center gap-2 pb-3 px-4 font-semibold transition-colors relative ${
+              activeTab === "tagged"
+                ? "text-primary"
+                : "text-muted-foreground"
+            }`}
+          >
+            <Users className="w-5 h-5" />
+            Tagged
+            {activeTab === "tagged" && (
+              <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-primary rounded-full" />
+            )}
+          </button>
         </div>
 
         {/* Posts Grid */}
-        <div className="grid grid-cols-3 gap-3 pb-6">
+        <div className="grid grid-cols-3 gap-2 pb-6">
           {[1, 2, 3, 4, 5, 6].map((i) => (
-            <div key={i} className="aspect-square rounded-2xl bg-gradient-secondary/30 animate-fade-in card-3d border-2 border-secondary/20" style={{ animationDelay: `${i * 50}ms` }} />
+            <div
+              key={i}
+              className="aspect-square rounded-xl bg-gradient-secondary/20 animate-fade-in"
+              style={{ animationDelay: `${i * 50}ms` }}
+            />
           ))}
         </div>
       </div>
 
-      {profile && <EditProfileDialog open={showEditProfile} onOpenChange={setShowEditProfile} profile={profile} onProfileUpdated={loadProfile} />}
+      {/* Edit Profile Dialog */}
+      {profile && (
+        <EditProfileDialog
+          open={showEditProfile}
+          onOpenChange={setShowEditProfile}
+          profile={profile}
+          onProfileUpdated={loadProfile}
+        />
+      )}
     </div>
   );
 };
