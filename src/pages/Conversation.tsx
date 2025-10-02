@@ -78,10 +78,18 @@ const Conversation = () => {
           table: 'messages',
           filter: `conversation_id=eq.${conversationId}`
         },
-        (payload) => {
+        async (payload) => {
           const newMsg = payload.new as Message;
           setMessages(prev => [...prev, newMsg]);
           scrollToBottom();
+          
+          // Mark new message as read if it's from the other user
+          if (newMsg.sender_id !== currentUserId) {
+            await supabase
+              .from('messages')
+              .update({ read: true })
+              .eq('id', newMsg.id);
+          }
         }
       )
       .subscribe();
@@ -89,7 +97,7 @@ const Conversation = () => {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [conversationId]);
+  }, [conversationId, currentUserId]);
 
   useEffect(() => {
     scrollToBottom();
@@ -146,13 +154,17 @@ const Conversation = () => {
         setCanPropose(canProposeData || false);
       }
 
-      // Mark messages as read
-      await supabase
+      // Mark messages as read immediately
+      const { error: markReadError } = await supabase
         .from('messages')
         .update({ read: true })
         .eq('conversation_id', conversationId)
         .neq('sender_id', user.id)
         .eq('read', false);
+
+      if (markReadError) {
+        console.error('Error marking messages as read:', markReadError);
+      }
 
     } catch (error: any) {
       toast({
