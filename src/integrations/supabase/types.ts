@@ -618,24 +618,30 @@ export type Database = {
       }
       stories: {
         Row: {
+          caption: string | null
           created_at: string
           expires_at: string
           id: string
           image_url: string
+          music_url: string | null
           user_id: string
         }
         Insert: {
+          caption?: string | null
           created_at?: string
           expires_at?: string
           id?: string
           image_url: string
+          music_url?: string | null
           user_id: string
         }
         Update: {
+          caption?: string | null
           created_at?: string
           expires_at?: string
           id?: string
           image_url?: string
+          music_url?: string | null
           user_id?: string
         }
         Relationships: [
