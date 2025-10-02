@@ -8,6 +8,7 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import defaultAvatar from "@/assets/default-avatar.png";
+import { EditProfileDialog } from "@/components/EditProfileDialog";
 
 interface Profile {
   id: string;
@@ -25,6 +26,7 @@ const Profile = () => {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
   const [friendsCount, setFriendsCount] = useState(0);
+  const [showEditProfile, setShowEditProfile] = useState(false);
 
   useEffect(() => {
     loadProfile();
@@ -141,7 +143,10 @@ const Profile = () => {
             </AvatarFallback>
           </Avatar>
 
-          <Button className="mb-2 rounded-full bg-gradient-secondary shadow-glow-secondary hover:scale-105 transition-transform">
+          <Button 
+            onClick={() => setShowEditProfile(true)}
+            className="mb-2 rounded-full bg-gradient-secondary shadow-glow-secondary hover:scale-105 transition-transform"
+          >
             <Settings className="w-4 h-4 mr-2" />
             Edit Profile
           </Button>
@@ -242,6 +247,16 @@ const Profile = () => {
           ))}
         </div>
       </div>
+
+      {/* Edit Profile Dialog */}
+      {profile && (
+        <EditProfileDialog
+          open={showEditProfile}
+          onOpenChange={setShowEditProfile}
+          profile={profile}
+          onProfileUpdated={loadProfile}
+        />
+      )}
     </div>
   );
 };
