@@ -155,6 +155,7 @@ const Profile = () => {
     }
   };
 
+  // Load user's posts
   const loadPosts = async () => {
     if (!profile) return;
 
