@@ -61,7 +61,7 @@ const Profile = () => {
 
   useEffect(() => {
     loadFriendsCount();
-    // loadRelationship(); // Temporarily disabled until types are regenerated
+    loadRelationship();
   }, [profile]);
 
   const loadFriendsCount = async () => {
@@ -109,46 +109,35 @@ const Profile = () => {
     }
   };
 
-  // const loadRelationship = async () => {
-  //   if (!profile) return;
+  const loadRelationship = async () => {
+    if (!profile) return;
 
-  //   try {
-  //     const result: any = await supabase
-  //       .from('relationships')
-  //       .select('*')
-  //       .or(`user_id.eq.${profile.id},partner_id.eq.${profile.id}`)
-  //       .eq('status', 'accepted')
-  //       .maybeSingle();
+    try {
+      const { data: relationshipData } = await supabase
+        .from('relationships')
+        .select(`
+          *,
+          partner_profile:profiles!relationships_partner_id_fkey(display_name, username),
+          user_profile:profiles!relationships_user_id_fkey(display_name, username)
+        `)
+        .or(`user_id.eq.${profile.id},partner_id.eq.${profile.id}`)
+        .eq('status', 'accepted')
+        .maybeSingle();
 
-  //     if (result.error) {
-  //       console.error('Error loading relationship:', result.error);
-  //       return;
-  //     }
-
-  //     if (result.data) {
-  //       const relationshipData = result.data;
-  //       // Load partner profile separately
-  //       const isCurrentUserTheInitiator = relationshipData.user_id === profile.id;
-  //       const partnerId = isCurrentUserTheInitiator ? relationshipData.partner_id : relationshipData.user_id;
-        
-  //       const partnerResult: any = await supabase
-  //         .from('profiles')
-  //         .select('display_name, username')
-  //         .eq('id', partnerId)
-  //         .single();
-
-  //       setRelationship({
-  //         id: relationshipData.id,
-  //         user_id: relationshipData.user_id,
-  //         partner_id: relationshipData.partner_id,
-  //         status: relationshipData.status,
-  //         partner_profile: partnerResult.data || undefined
-  //       });
-  //     }
-  //   } catch (error: any) {
-  //     console.error('Error loading relationship:', error);
-  //   }
-  // };
+      if (relationshipData) {
+        // Determine which profile is the partner
+        const isCurrentUserTheInitiator = relationshipData.user_id === profile.id;
+        setRelationship({
+          ...relationshipData,
+          partner_profile: isCurrentUserTheInitiator 
+            ? (relationshipData as any).partner_profile 
+            : (relationshipData as any).user_profile
+        });
+      }
+    } catch (error: any) {
+      console.error('Error loading relationship:', error);
+    }
+  };
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
@@ -179,142 +168,142 @@ const Profile = () => {
 
   return (
     <div className="min-h-screen bg-background pb-20 overflow-auto">
-      {/* Header */}
-      <div className="border-b">
-        <div className="px-6 py-4 flex items-center justify-between">
-          <h1 className="text-xl font-semibold">{profile.username}</h1>
-          <Button
-            onClick={handleLogout}
-            variant="ghost"
-            size="icon"
-            className="rounded-full"
-          >
-            <LogOut className="w-5 h-5" />
-          </Button>
-        </div>
+      {/* Header with gradient and pattern */}
+      <div className="relative h-48 bg-gradient-to-br from-primary via-secondary to-accent overflow-hidden">
+        <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiNmZmYiIGZpbGwtb3BhY2l0eT0iMC4xIj48cGF0aCBkPSJNMzYgMzRjMC0yIDItNCAyLTRzMiAyIDIgNHYyYzAgMiAyIDQgMiA0czIgMiA0IDJ2MmMwIDItMiA0LTIgNHMtMiAyLTQgMkg0MGMtMi0yLTItNC0yLTR2LTJjMC0yIDItNCAxLTRzMi0yIDItNHYtMnoiLz48L2c+PC9nPjwvc3ZnPg==')] opacity-20"></div>
+        <Button
+          onClick={handleLogout}
+          variant="ghost"
+          className="absolute top-6 right-6 text-white hover:bg-white/20 backdrop-blur-sm rounded-full"
+        >
+          <LogOut className="w-5 h-5 mr-2" />
+          Logout
+        </Button>
       </div>
 
-      {/* Profile Section - Instagram Style */}
-      <div className="px-6 py-6 animate-fade-in">
-        {/* Avatar and Stats Row */}
-        <div className="flex items-center gap-6 mb-6">
-          <Avatar className="w-20 h-20 md:w-28 md:h-28 border-2 border-border">
-            <AvatarImage src={profile.profile_picture_url || defaultAvatar} />
-            <AvatarFallback className="text-2xl md:text-3xl bg-muted">
-              {profile.username?.[0]?.toUpperCase() || "U"}
-            </AvatarFallback>
-          </Avatar>
+      {/* Profile Card */}
+      <div className="px-6 -mt-20 relative z-10 animate-fade-in">
+        <Card className="p-6 rounded-3xl bg-card/95 backdrop-blur-md border-2 border-primary/20 shadow-2xl">
+          <div className="flex items-start gap-4 mb-6">
+            <Avatar className="w-24 h-24 border-4 border-background shadow-2xl ring-4 ring-primary/20">
+              <AvatarImage src={profile.profile_picture_url || defaultAvatar} />
+              <AvatarFallback className="text-3xl bg-muted">
+                {profile.username?.[0]?.toUpperCase() || "U"}
+              </AvatarFallback>
+            </Avatar>
 
-          {/* Stats */}
-          <div className="flex-1 flex justify-around text-center">
-            <div className="cursor-default">
-              <p className="text-xl font-semibold">{stats.posts}</p>
-              <p className="text-sm text-muted-foreground">posts</p>
+            <div className="flex-1">
+              <h1 className="text-2xl font-bold bg-gradient-primary bg-clip-text text-transparent">
+                {profile.display_name || profile.username}
+              </h1>
+              <p className="text-sm text-muted-foreground">@{profile.username}</p>
             </div>
-            <div 
-              onClick={() => setShowFriends(true)}
-              className="cursor-pointer hover:opacity-70 transition-opacity"
+
+            <Button 
+              onClick={() => setShowEditProfile(true)}
+              size="sm"
+              className="rounded-full bg-gradient-secondary hover:scale-105 transition-transform"
             >
-              <p className="text-xl font-semibold">{stats.friends}</p>
-              <p className="text-sm text-muted-foreground">friends</p>
-            </div>
-            <div className="cursor-default">
-              <p className="text-xl font-semibold">{stats.stories}</p>
-              <p className="text-sm text-muted-foreground">stories</p>
-            </div>
+              <Settings className="w-4 h-4 mr-2" />
+              Edit
+            </Button>
           </div>
-        </div>
 
-        {/* Name and Bio */}
-        <div className="mb-4">
-          <h2 className="font-semibold text-sm">
-            {profile.display_name || profile.username}
-          </h2>
-          
-          {/* Age and Gender */}
-          {(profile.age || profile.gender) && (
-            <p className="text-sm text-muted-foreground mt-1">
+          {/* Bio and Details */}
+          <div className="mb-6">
+            <p className="text-sm text-muted-foreground mb-2 flex items-center gap-2 flex-wrap">
               {profile.age && <span>{profile.age} years old</span>}
-              {profile.age && profile.gender && <span> • </span>}
+              {profile.age && profile.gender && <span>•</span>}
               {profile.gender && <span className="capitalize">{profile.gender.replace('_', ' ')}</span>}
             </p>
-          )}
 
-          {/* Relationship Status */}
-          {relationship && (
-            <p className="text-sm mt-2 flex items-center gap-1">
-              <span>💕</span>
-              <span>In a relationship with <span className="font-semibold">{relationship.partner_profile?.display_name || relationship.partner_profile?.username}</span></span>
+            {/* Relationship Status */}
+            {relationship && (
+              <Badge className="mb-4 bg-gradient-to-r from-primary to-secondary text-primary-foreground px-4 py-2 text-sm">
+                💕 In a relationship with {relationship.partner_profile?.display_name || relationship.partner_profile?.username}
+              </Badge>
+            )}
+
+            <p className="text-foreground/80 mb-4 leading-relaxed">
+              {profile.bio || "No bio yet ✨"}
             </p>
-          )}
 
-          {/* Bio */}
-          <p className="text-sm mt-2 whitespace-pre-wrap">
-            {profile.bio || ""}
-          </p>
+            {/* Interests */}
+            {profile.interests && profile.interests.length > 0 && (
+              <div className="flex flex-wrap gap-2">
+                {profile.interests.map((interest, index) => (
+                  <Badge
+                    key={interest}
+                    className="bg-gradient-accent text-accent-foreground rounded-full px-4 py-1.5 shadow-sm animate-fade-in hover:scale-105 transition-transform"
+                    style={{ animationDelay: `${index * 50}ms` }}
+                  >
+                    {interest}
+                  </Badge>
+                ))}
+              </div>
+            )}
+          </div>
+        </Card>
 
-          {/* Interests */}
-          {profile.interests && profile.interests.length > 0 && (
-            <div className="flex flex-wrap gap-2 mt-3">
-              {profile.interests.map((interest) => (
-                <Badge
-                  key={interest}
-                  variant="secondary"
-                  className="rounded-md px-2 py-0.5 text-xs font-normal"
-                >
-                  {interest}
-                </Badge>
-              ))}
-            </div>
-          )}
+        {/* Stats Cards */}
+        <div className="grid grid-cols-3 gap-4 my-6">
+          <Card className="p-5 text-center rounded-2xl bg-gradient-to-br from-primary/10 to-primary/5 border-2 border-primary/20 hover:shadow-glow-primary transition-all hover:scale-105 animate-fade-in">
+            <p className="text-3xl font-bold bg-gradient-primary bg-clip-text text-transparent mb-1">{stats.posts}</p>
+            <p className="text-sm font-medium text-muted-foreground">Posts</p>
+          </Card>
+          <Card 
+            onClick={() => setShowFriends(true)}
+            className="p-5 text-center rounded-2xl bg-gradient-to-br from-secondary/10 to-secondary/5 border-2 border-secondary/20 hover:shadow-glow-secondary transition-all hover:scale-105 animate-fade-in cursor-pointer" 
+            style={{ animationDelay: '50ms' }}
+          >
+            <p className="text-3xl font-bold bg-gradient-secondary bg-clip-text text-transparent mb-1">{stats.friends}</p>
+            <p className="text-sm font-medium text-muted-foreground">Friends</p>
+          </Card>
+          <Card className="p-5 text-center rounded-2xl bg-gradient-to-br from-accent/10 to-accent/5 border-2 border-accent/20 hover:shadow-glow-accent transition-all hover:scale-105 animate-fade-in" style={{ animationDelay: '100ms' }}>
+            <p className="text-3xl font-bold bg-gradient-accent bg-clip-text text-transparent mb-1">{stats.stories}</p>
+            <p className="text-sm font-medium text-muted-foreground">Stories</p>
+          </Card>
         </div>
 
-        {/* Edit Profile Button */}
-        <Button 
-          onClick={() => setShowEditProfile(true)}
-          variant="outline"
-          className="w-full rounded-lg font-semibold"
-          size="sm"
-        >
-          Edit Profile
-        </Button>
-
         {/* Tab Navigation */}
-        <div className="flex gap-6 border-b-2 mb-6 mt-8 animate-fade-in">
+        <div className="flex gap-6 border-b-2 mb-6 animate-fade-in" style={{ animationDelay: '150ms' }}>
           <button
             onClick={() => setActiveTab("posts")}
-            className={`flex items-center gap-2 pb-4 px-2 font-semibold transition-all relative ${
+            className={`flex items-center gap-2 pb-4 px-2 font-bold transition-all relative ${
               activeTab === "posts"
-                ? "text-foreground"
-                : "text-muted-foreground"
+                ? "text-primary scale-105"
+                : "text-muted-foreground hover:text-foreground"
             }`}
           >
             <Grid3x3 className="w-5 h-5" />
+            Posts
             {activeTab === "posts" && (
-              <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-foreground" />
+              <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-primary rounded-full shadow-glow-primary" />
             )}
           </button>
           <button
             onClick={() => setActiveTab("tagged")}
-            className={`flex items-center gap-2 pb-4 px-2 font-semibold transition-all relative ${
+            className={`flex items-center gap-2 pb-4 px-2 font-bold transition-all relative ${
               activeTab === "tagged"
-                ? "text-foreground"
-                : "text-muted-foreground"
+                ? "text-primary scale-105"
+                : "text-muted-foreground hover:text-foreground"
             }`}
           >
             <Users className="w-5 h-5" />
+            Tagged
             {activeTab === "tagged" && (
-              <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-foreground" />
+              <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-primary rounded-full shadow-glow-primary" />
             )}
           </button>
         </div>
 
         {/* Posts Grid */}
-        <div className="grid grid-cols-3 gap-1">
+        <div className="grid grid-cols-3 gap-3 pb-6">
           {[1, 2, 3, 4, 5, 6].map((i) => (
             <div
               key={i}
-              className="aspect-square bg-muted hover:opacity-70 transition-opacity cursor-pointer"
+              className="aspect-square rounded-2xl bg-gradient-to-br from-primary/5 to-secondary/5 hover:from-primary/10 hover:to-secondary/10 border border-primary/10 hover:border-primary/30 transition-all hover:scale-105 cursor-pointer animate-fade-in"
+              style={{ animationDelay: `${i * 50}ms` }}
             />
           ))}
         </div>
