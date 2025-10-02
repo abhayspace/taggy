@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { useLocation } from "react-router-dom";
 
 interface NotificationBadgeProps {
   type: "notifications" | "chat";
@@ -8,9 +9,15 @@ interface NotificationBadgeProps {
 
 export const NotificationBadge = ({ type, className = "" }: NotificationBadgeProps) => {
   const [count, setCount] = useState(0);
+  const location = useLocation();
 
   useEffect(() => {
     loadCount();
+
+    // Reset badge when user navigates to the relevant page
+    if (type === 'notifications' && location.pathname === '/notifications') {
+      setCount(0);
+    }
 
     // Set up real-time subscriptions
     const channel = supabase
@@ -53,7 +60,7 @@ export const NotificationBadge = ({ type, className = "" }: NotificationBadgePro
         supabase.removeChannel(proposalChannel);
       }
     };
-  }, [type]);
+  }, [type, location.pathname]);
 
   const loadCount = async () => {
     try {
@@ -77,7 +84,7 @@ export const NotificationBadge = ({ type, className = "" }: NotificationBadgePro
 
         setCount((friendRequestCount || 0) + (proposalCount || 0));
       } else {
-        // Count unread messages across all conversations
+        // For chat: count unread messages using message_reads table
         const { data: conversations } = await supabase
           .from('conversation_participants')
           .select('conversation_id')
@@ -90,12 +97,21 @@ export const NotificationBadge = ({ type, className = "" }: NotificationBadgePro
 
         let totalUnread = 0;
         for (const conv of conversations) {
+          // Get last read timestamp for this conversation
+          const { data: readState } = await supabase
+            .from('message_reads')
+            .select('last_read_at')
+            .eq('user_id', user.id)
+            .eq('conversation_id', conv.conversation_id)
+            .maybeSingle();
+
+          // Count messages after last read timestamp
           const { count: unreadCount } = await supabase
             .from('messages')
             .select('*', { count: 'exact', head: true })
             .eq('conversation_id', conv.conversation_id)
-            .eq('read', false)
-            .neq('sender_id', user.id);
+            .neq('sender_id', user.id)
+            .gt('created_at', readState?.last_read_at || '1970-01-01');
 
           totalUnread += unreadCount || 0;
         }

@@ -117,6 +117,21 @@ const Conversation = () => {
     loadRelationshipStatus();
     loadBlockMuteStatus();
 
+    // Update last_read_at when user opens this conversation
+    const updateReadState = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user || !conversationId) return;
+
+      await supabase
+        .from('message_reads')
+        .upsert({
+          user_id: user.id,
+          conversation_id: conversationId,
+          last_read_at: new Date().toISOString()
+        });
+    };
+    updateReadState();
+
     // Set up realtime subscription for new messages
     const channel = supabase
       .channel(`conversation-${conversationId}`)
@@ -133,12 +148,15 @@ const Conversation = () => {
           setMessages(prev => [...prev, newMsg]);
           scrollToBottom();
           
-          // Mark new message as read if it's from the other user
+          // Update read state for new incoming messages
           if (newMsg.sender_id !== currentUserId) {
             await supabase
-              .from('messages')
-              .update({ read: true })
-              .eq('id', newMsg.id);
+              .from('message_reads')
+              .upsert({
+                user_id: currentUserId,
+                conversation_id: conversationId,
+                last_read_at: new Date().toISOString()
+              });
           }
         }
       )
@@ -204,17 +222,14 @@ const Conversation = () => {
         setCanPropose(canProposeData || false);
       }
 
-      // Mark messages as read immediately
-      const { error: markReadError } = await supabase
-        .from('messages')
-        .update({ read: true })
-        .eq('conversation_id', conversationId)
-        .neq('sender_id', user.id)
-        .eq('read', false);
-
-      if (markReadError) {
-        console.error('Error marking messages as read:', markReadError);
-      }
+      // Update read state for this conversation
+      await supabase
+        .from('message_reads')
+        .upsert({
+          user_id: user.id,
+          conversation_id: conversationId,
+          last_read_at: new Date().toISOString()
+        });
 
     } catch (error: any) {
       toast({

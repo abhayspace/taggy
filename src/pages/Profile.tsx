@@ -271,10 +271,31 @@ const Profile = () => {
     );
   }
 
+  const [giftsCount, setGiftsCount] = useState(0);
+
+  useEffect(() => {
+    if (profile) {
+      loadGiftsCount();
+    }
+  }, [profile]);
+
+  const loadGiftsCount = async () => {
+    if (!profile) return;
+    try {
+      const { count } = await supabase
+        .from('user_gifts')
+        .select('*', { count: 'exact', head: true })
+        .eq('receiver_id', profile.id);
+      setGiftsCount(count || 0);
+    } catch (error) {
+      console.error('Error loading gifts count:', error);
+    }
+  };
+
   const stats = {
     posts: posts.length,
     friends: friendsCount,
-    collections: 0, // TODO: implement collections
+    collections: giftsCount,
   };
 
   return (
@@ -399,7 +420,7 @@ const Profile = () => {
             style={{ animationDelay: '100ms' }}
           >
             <p className="text-3xl font-bold bg-gradient-primary bg-clip-text text-transparent mb-1">{stats.collections}</p>
-            <p className="text-xs font-medium text-muted-foreground">Gifts</p>
+            <p className="text-xs font-medium text-muted-foreground">Collection</p>
           </Card>
         </div>
 
@@ -441,7 +462,8 @@ const Profile = () => {
                 : "text-muted-foreground hover:text-foreground"
             }`}
           >
-            🎁 Gifts
+            <Bookmark className="w-4 h-4" />
+            Collection
             {activeTab === "collection" && (
               <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-primary rounded-full" />
             )}
