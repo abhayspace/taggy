@@ -342,6 +342,14 @@ export type Database = {
         Args: { request_id: string }
         Returns: undefined
       }
+      can_view_post: {
+        Args: { _post_user_id: string }
+        Returns: boolean
+      }
+      is_friend_or_self: {
+        Args: { _profile_id: string; _user_id: string }
+        Returns: boolean
+      }
     }
     Enums: {
       [_ in never]: never
