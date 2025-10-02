@@ -99,12 +99,11 @@ export const StartChatDialog = ({ open, onOpenChange }: StartChatDialogProps) =>
         }
       }
 
-      // Create new conversation
-      const { data: newConv, error: convError } = await supabase
+      // Create new conversation with pre-generated ID to avoid RLS on SELECT
+      const convId = crypto.randomUUID();
+      const { error: convError } = await supabase
         .from('conversations')
-        .insert({})
-        .select()
-        .single();
+        .insert({ id: convId });
 
       if (convError) throw convError;
 
@@ -112,13 +111,13 @@ export const StartChatDialog = ({ open, onOpenChange }: StartChatDialogProps) =>
       const { error: participantsError } = await supabase
         .from('conversation_participants')
         .insert([
-          { conversation_id: newConv.id, user_id: user.id },
-          { conversation_id: newConv.id, user_id: friendId }
+          { conversation_id: convId, user_id: user.id },
+          { conversation_id: convId, user_id: friendId }
         ]);
 
       if (participantsError) throw participantsError;
 
-      navigate(`/conversation/${newConv.id}`);
+      navigate(`/conversation/${convId}`);
       onOpenChange(false);
     } catch (error: any) {
       toast({
