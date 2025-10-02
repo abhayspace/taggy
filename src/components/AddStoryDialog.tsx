@@ -101,9 +101,17 @@ export const AddStoryDialog = ({ open, onOpenChange, onStoryAdded }: AddStoryDia
 
       if (error) throw error;
 
+      // Award points for adding story
+      await supabase.rpc('award_points', {
+        _user_id: user.id,
+        _points: 3,
+        _action: 'story_added',
+        _description: 'Added a new story'
+      });
+
       toast({
         title: "Success",
-        description: "Story added successfully",
+        description: "Story added successfully (+3 points)",
       });
 
       setImageUrl("");

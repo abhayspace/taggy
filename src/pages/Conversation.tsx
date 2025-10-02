@@ -4,11 +4,12 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Send, Loader2, MessageCircle, Heart } from "lucide-react";
+import { ArrowLeft, Send, Loader2, MessageCircle, Heart, Gift } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import defaultAvatar from "@/assets/default-avatar.png";
 import { formatDistanceToNow } from "date-fns";
+import { SendGiftDialog } from "@/components/SendGiftDialog";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -61,6 +62,7 @@ const Conversation = () => {
   const [proposing, setProposing] = useState(false);
   const [showProposalDialog, setShowProposalDialog] = useState(false);
   const [showResponseDialog, setShowResponseDialog] = useState(false);
+  const [showGiftDialog, setShowGiftDialog] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -335,6 +337,15 @@ const Conversation = () => {
               </p>
             </div>
 
+            {/* Gift Button */}
+            <Button
+              onClick={() => setShowGiftDialog(true)}
+              size="sm"
+              className="rounded-full bg-white/20 hover:bg-white/30 text-white border-2 border-white/50"
+            >
+              <Gift className="w-4 h-4" />
+            </Button>
+
             {/* Relationship Actions */}
             {canPropose && !relationship && (
               <Button
@@ -477,6 +488,16 @@ const Conversation = () => {
           </Button>
         </div>
       </form>
+      
+      {/* Send Gift Dialog */}
+      {otherUser && (
+        <SendGiftDialog
+          open={showGiftDialog}
+          onOpenChange={setShowGiftDialog}
+          receiverId={otherUser.id}
+          receiverName={otherUser.display_name || otherUser.username}
+        />
+      )}
     </div>
   );
 };

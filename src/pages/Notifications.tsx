@@ -96,15 +96,37 @@ const Notifications = () => {
   const acceptRequest = async (requestId: string) => {
     setProcessingId(requestId);
     try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      // Get the sender ID before accepting
+      const request = requests.find(r => r.id === requestId);
+      if (!request) return;
+
       const { error } = await supabase.rpc('accept_friend_request', {
         request_id: requestId
       });
 
       if (error) throw error;
 
+      // Award points to both users for making friends
+      await supabase.rpc('award_points', {
+        _user_id: user.id,
+        _points: 5,
+        _action: 'friend_made',
+        _description: 'Accepted a friend request'
+      });
+
+      await supabase.rpc('award_points', {
+        _user_id: request.sender_id,
+        _points: 5,
+        _action: 'friend_made',
+        _description: 'Friend request accepted'
+      });
+
       toast({
-        title: "Friend request accepted!",
-        description: "You are now friends.",
+        title: "Friend request accepted! 🎉",
+        description: "You are now friends. +5 points!",
       });
 
       // Remove from list

@@ -146,6 +146,33 @@ export type Database = {
           },
         ]
       }
+      gifts: {
+        Row: {
+          created_at: string
+          emoji: string
+          id: string
+          name: string
+          price: number
+          rarity: string
+        }
+        Insert: {
+          created_at?: string
+          emoji: string
+          id?: string
+          name: string
+          price: number
+          rarity: string
+        }
+        Update: {
+          created_at?: string
+          emoji?: string
+          id?: string
+          name?: string
+          price?: number
+          rarity?: string
+        }
+        Relationships: []
+      }
       messages: {
         Row: {
           content: string
@@ -187,6 +214,33 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      point_transactions: {
+        Row: {
+          action: string
+          created_at: string
+          description: string | null
+          id: string
+          points: number
+          user_id: string
+        }
+        Insert: {
+          action: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          points: number
+          user_id: string
+        }
+        Update: {
+          action?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          points?: number
+          user_id?: string
+        }
+        Relationships: []
       }
       post_comments: {
         Row: {
@@ -459,6 +513,68 @@ export type Database = {
           },
         ]
       }
+      user_gifts: {
+        Row: {
+          created_at: string
+          gift_id: string
+          id: string
+          message: string | null
+          receiver_id: string
+          sender_id: string
+        }
+        Insert: {
+          created_at?: string
+          gift_id: string
+          id?: string
+          message?: string | null
+          receiver_id: string
+          sender_id: string
+        }
+        Update: {
+          created_at?: string
+          gift_id?: string
+          id?: string
+          message?: string | null
+          receiver_id?: string
+          sender_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_gifts_gift_id_fkey"
+            columns: ["gift_id"]
+            isOneToOne: false
+            referencedRelation: "gifts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_points: {
+        Row: {
+          created_at: string
+          id: string
+          last_daily_bonus: string | null
+          total_points: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          last_daily_bonus?: string | null
+          total_points?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          last_daily_bonus?: string | null
+          total_points?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -466,6 +582,15 @@ export type Database = {
     Functions: {
       accept_friend_request: {
         Args: { request_id: string }
+        Returns: undefined
+      }
+      award_points: {
+        Args: {
+          _action: string
+          _description: string
+          _points: number
+          _user_id: string
+        }
         Returns: undefined
       }
       can_propose_to: {
@@ -483,6 +608,10 @@ export type Database = {
       is_friend_or_self: {
         Args: { _profile_id: string; _user_id: string }
         Returns: boolean
+      }
+      send_gift: {
+        Args: { _gift_id: string; _message: string; _receiver_id: string }
+        Returns: Json
       }
     }
     Enums: {

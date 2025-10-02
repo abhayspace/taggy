@@ -12,6 +12,7 @@ import { EditProfileDialog } from "@/components/EditProfileDialog";
 import { FriendsList } from "@/components/FriendsList";
 import { SettingsDialog } from "@/components/SettingsDialog";
 import { AddPostDialog } from "@/components/AddPostDialog";
+import { GiftCollectionTab } from "@/components/GiftCollectionTab";
 
 interface Relationship {
   id: string;
@@ -48,7 +49,7 @@ interface Post {
 const Profile = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const [activeTab, setActiveTab] = useState<"posts" | "gallery" | "collection">("posts");
+  const [activeTab, setActiveTab] = useState<"posts" | "gallery" | "collection" | "gifts">("posts");
   const [pressTimer, setPressTimer] = useState<NodeJS.Timeout | null>(null);
   const [pressedPostId, setPressedPostId] = useState<string | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
@@ -388,6 +389,19 @@ const Profile = () => {
               <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-primary rounded-full" />
             )}
           </button>
+          <button
+            onClick={() => setActiveTab("gifts")}
+            className={`flex items-center gap-2 pb-4 px-2 text-xs font-medium transition-all relative ${
+              activeTab === "gifts"
+                ? "text-primary"
+                : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            🎁 Gifts
+            {activeTab === "gifts" && (
+              <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-primary rounded-full" />
+            )}
+          </button>
         </div>
 
         {/* Content based on active tab */}
@@ -487,6 +501,10 @@ const Profile = () => {
             </div>
             <p className="text-lg text-muted-foreground">No saved posts yet</p>
           </div>
+        )}
+
+        {activeTab === "gifts" && profile && (
+          <GiftCollectionTab userId={profile.id} />
         )}
       </div>
 
