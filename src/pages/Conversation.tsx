@@ -4,12 +4,15 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Send, Loader2, MessageCircle, Heart, Gift } from "lucide-react";
+import { ArrowLeft, Send, Loader2, MessageCircle, Heart, Gift, Phone, Video } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import defaultAvatar from "@/assets/default-avatar.png";
 import { formatDistanceToNow } from "date-fns";
 import { SendGiftDialog } from "@/components/SendGiftDialog";
+import { useAgoraCalls } from "@/hooks/useAgoraCalls";
+import { IncomingCallPopup } from "@/components/IncomingCallPopup";
+import { CallScreen } from "@/components/CallScreen";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -64,6 +67,47 @@ const Conversation = () => {
   const [showResponseDialog, setShowResponseDialog] = useState(false);
   const [showGiftDialog, setShowGiftDialog] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  // Call functionality
+  const {
+    incomingCall,
+    activeCall,
+    remoteUsers,
+    localAudioTrack,
+    localVideoTrack,
+    isAudioMuted,
+    isVideoMuted,
+    initiateCall,
+    acceptCall,
+    rejectCall,
+    endCall,
+    toggleAudio,
+    toggleVideo,
+  } = useAgoraCalls(currentUserId);
+
+  const [incomingCallUserInfo, setIncomingCallUserInfo] = useState<OtherUser | null>(null);
+
+  // Load caller info when incoming call arrives
+  useEffect(() => {
+    if (incomingCall) {
+      loadCallerInfo(incomingCall.caller_id);
+    }
+  }, [incomingCall]);
+
+  const loadCallerInfo = async (userId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('username, display_name, profile_picture_url')
+        .eq('id', userId)
+        .single();
+
+      if (error) throw error;
+      setIncomingCallUserInfo(data as any);
+    } catch (error) {
+      console.error('Error loading caller info:', error);
+    }
+  };
 
   useEffect(() => {
     loadConversation();
@@ -337,6 +381,23 @@ const Conversation = () => {
               </p>
             </div>
 
+            {/* Call Buttons */}
+            <Button
+              onClick={() => initiateCall(otherUser.id, conversationId!, 'voice')}
+              size="sm"
+              className="rounded-full bg-white/20 hover:bg-white/30 text-white border-2 border-white/50"
+            >
+              <Phone className="w-4 h-4" />
+            </Button>
+            
+            <Button
+              onClick={() => initiateCall(otherUser.id, conversationId!, 'video')}
+              size="sm"
+              className="rounded-full bg-white/20 hover:bg-white/30 text-white border-2 border-white/50"
+            >
+              <Video className="w-4 h-4" />
+            </Button>
+
             {/* Gift Button */}
             <Button
               onClick={() => setShowGiftDialog(true)}
@@ -496,6 +557,32 @@ const Conversation = () => {
         </div>
       </form>
       
+      {/* Incoming Call Popup */}
+      {incomingCall && incomingCallUserInfo && (
+        <IncomingCallPopup
+          call={incomingCall}
+          callerInfo={incomingCallUserInfo}
+          onAccept={() => acceptCall(incomingCall)}
+          onReject={() => rejectCall(incomingCall.id)}
+        />
+      )}
+
+      {/* Active Call Screen */}
+      {activeCall && otherUser && (
+        <CallScreen
+          call={activeCall}
+          remoteUsers={remoteUsers}
+          localAudioTrack={localAudioTrack}
+          localVideoTrack={localVideoTrack}
+          isAudioMuted={isAudioMuted}
+          isVideoMuted={isVideoMuted}
+          onToggleAudio={toggleAudio}
+          onToggleVideo={toggleVideo}
+          onEndCall={endCall}
+          otherUserInfo={otherUser}
+        />
+      )}
+
       {/* Send Gift Dialog */}
       {otherUser && (
         <SendGiftDialog
