@@ -192,7 +192,7 @@ const Feed = () => {
     <div className="h-full flex flex-col pb-20">
       {/* Header with Points */}
       <div className="flex items-center justify-between px-4 py-3 bg-background/80 backdrop-blur-sm sticky top-0 z-20 border-b">
-        <h1 className="text-xl font-bold bg-gradient-to-r from-pink-500 via-purple-500 to-blue-500 bg-clip-text text-transparent">
+        <h1 className="text-xl font-bold text-purple-500">
           TagMate
         </h1>
         <PointsDisplay />

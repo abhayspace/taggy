@@ -15,6 +15,7 @@ interface AddPostDialogProps {
 }
 
 export const AddPostDialog = ({ open, onOpenChange, onPostAdded }: AddPostDialogProps) => {
+  const [postType, setPostType] = useState<"post" | "note" | null>(null);
   const [caption, setCaption] = useState("");
   const [imageUrl, setImageUrl] = useState("");
   const [loading, setLoading] = useState(false);
@@ -82,10 +83,19 @@ export const AddPostDialog = ({ open, onOpenChange, onPostAdded }: AddPostDialog
   };
 
   const handleSubmit = async () => {
-    if (!imageUrl.trim() && !caption.trim()) {
+    if (postType === "post" && !imageUrl.trim() && !caption.trim()) {
       toast({
         title: "Content required",
         description: "Please provide an image/video or caption",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (postType === "note" && !caption.trim()) {
+      toast({
+        title: "Content required",
+        description: "Please write something for your note",
         variant: "destructive",
       });
       return;
@@ -106,9 +116,10 @@ export const AddPostDialog = ({ open, onOpenChange, onPostAdded }: AddPostDialog
 
       toast({
         title: "Success",
-        description: "Post created successfully",
+        description: postType === "post" ? "Post created successfully" : "Note created successfully",
       });
 
+      setPostType(null);
       setCaption("");
       setImageUrl("");
       onOpenChange(false);
@@ -125,79 +136,131 @@ export const AddPostDialog = ({ open, onOpenChange, onPostAdded }: AddPostDialog
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={(open) => {
+      if (!open) {
+        setPostType(null);
+        setCaption("");
+        setImageUrl("");
+      }
+      onOpenChange(open);
+    }}>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle>Create New Post</DialogTitle>
+          <DialogTitle>{postType ? (postType === "post" ? "Create Post" : "Create Note") : "What do you want to share?"}</DialogTitle>
         </DialogHeader>
-        <div className="space-y-4 py-4">
-          <div className="space-y-2">
-            <Label htmlFor="caption">What's on your mind?</Label>
-            <Textarea
-              id="caption"
-              placeholder="Share your thoughts..."
-              value={caption}
-              onChange={(e) => setCaption(e.target.value)}
-              rows={4}
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="image">Image/Video (optional)</Label>
-            <input
-              type="file"
-              ref={fileInputRef}
-              onChange={handleFileUpload}
-              accept="image/*,video/*"
-              className="hidden"
-            />
-            {imageUrl ? (
-              <div className="relative rounded-lg overflow-hidden border">
-                <img src={imageUrl} alt="Preview" className="w-full h-48 object-cover" />
-                <Button
-                  type="button"
-                  variant="destructive"
-                  size="sm"
-                  className="absolute top-2 right-2"
-                  onClick={() => setImageUrl("")}
-                >
-                  Remove
-                </Button>
+        
+        {!postType ? (
+          <div className="space-y-3 py-4">
+            <Button
+              onClick={() => setPostType("post")}
+              className="w-full h-24 flex flex-col gap-2"
+              variant="outline"
+            >
+              <Image className="w-8 h-8" />
+              <div className="text-center">
+                <div className="font-semibold">Post</div>
+                <div className="text-xs text-muted-foreground">Share photos or videos</div>
               </div>
-            ) : (
-              <Button
-                type="button"
-                variant="outline"
-                className="w-full h-32 border-dashed"
-                onClick={() => fileInputRef.current?.click()}
-                disabled={uploading}
-              >
-                {uploading ? (
-                  <Loader2 className="w-6 h-6 animate-spin" />
-                ) : (
-                  <div className="flex flex-col items-center gap-2">
-                    <Image className="w-8 h-8 text-muted-foreground" />
-                    <span className="text-sm text-muted-foreground">
-                      Tap to select media
-                    </span>
+            </Button>
+            <Button
+              onClick={() => setPostType("note")}
+              className="w-full h-24 flex flex-col gap-2"
+              variant="outline"
+            >
+              <Upload className="w-8 h-8" />
+              <div className="text-center">
+                <div className="font-semibold">Note</div>
+                <div className="text-xs text-muted-foreground">Share your thoughts</div>
+              </div>
+            </Button>
+          </div>
+        ) : (
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="caption">{postType === "post" ? "Caption (optional)" : "What's on your mind?"}</Label>
+              <Textarea
+                id="caption"
+                placeholder={postType === "post" ? "Write a caption..." : "Share your thoughts..."}
+                value={caption}
+                onChange={(e) => setCaption(e.target.value)}
+                rows={4}
+              />
+            </div>
+            
+            {postType === "post" && (
+              <div className="space-y-2">
+                <Label htmlFor="image">Image/Video</Label>
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  onChange={handleFileUpload}
+                  accept="image/*,video/*"
+                  className="hidden"
+                />
+                {imageUrl ? (
+                  <div className="relative rounded-lg overflow-hidden border">
+                    <img src={imageUrl} alt="Preview" className="w-full h-48 object-cover" />
+                    <Button
+                      type="button"
+                      variant="destructive"
+                      size="sm"
+                      className="absolute top-2 right-2"
+                      onClick={() => setImageUrl("")}
+                    >
+                      Remove
+                    </Button>
                   </div>
+                ) : (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="w-full h-32 border-dashed"
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={uploading}
+                  >
+                    {uploading ? (
+                      <Loader2 className="w-6 h-6 animate-spin" />
+                    ) : (
+                      <div className="flex flex-col items-center gap-2">
+                        <Image className="w-8 h-8 text-muted-foreground" />
+                        <span className="text-sm text-muted-foreground">
+                          Tap to select media
+                        </span>
+                      </div>
+                    )}
+                  </Button>
+                )}
+              </div>
+            )}
+            
+            <div className="flex gap-2">
+              <Button 
+                onClick={() => {
+                  setPostType(null);
+                  setCaption("");
+                  setImageUrl("");
+                }} 
+                variant="outline"
+                className="w-full"
+              >
+                Back
+              </Button>
+              <Button onClick={handleSubmit} disabled={loading} className="w-full">
+                {loading ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Creating...
+                  </>
+                ) : (
+                  <>
+                    <Upload className="w-4 h-4 mr-2" />
+                    Create {postType === "post" ? "Post" : "Note"}
+                  </>
                 )}
               </Button>
-            )}
+            </div>
           </div>
-          <Button onClick={handleSubmit} disabled={loading} className="w-full">
-            {loading ? (
-              <>
-                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                Creating...
-              </>
-            ) : (
-              <>
-                <Upload className="w-4 h-4 mr-2" />
-                Create Post
-              </>
-            )}
-          </Button>
-        </div>
+        )}
       </DialogContent>
     </Dialog>
   );
