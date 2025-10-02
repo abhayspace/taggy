@@ -43,10 +43,13 @@ interface Story {
 
 const Feed = () => {
   const [posts, setPosts] = useState<Post[]>([]);
-  const [stories, setStories] = useState<Story[]>([]);
+  const [userStories, setUserStories] = useState<Story[]>([]);
+  const [friendsStories, setFriendsStories] = useState<Story[]>([]);
+  const [currentViewStories, setCurrentViewStories] = useState<Story[]>([]);
   const [likedPosts, setLikedPosts] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [currentUserProfile, setCurrentUserProfile] = useState<any>(null);
   const [showAddPost, setShowAddPost] = useState(false);
   const [showAddStory, setShowAddStory] = useState(false);
   const [selectedPostForComments, setSelectedPostForComments] = useState<string | null>(null);
@@ -80,6 +83,15 @@ const Feed = () => {
 
       setCurrentUserId(user.id);
 
+      // Load current user's profile
+      const { data: profileData } = await supabase
+        .from('profiles')
+        .select('username, display_name, profile_picture_url')
+        .eq('id', user.id)
+        .single();
+      
+      setCurrentUserProfile(profileData);
+
       // Load posts
       const { data: postsData, error: postsError } = await supabase
         .from('posts')
@@ -103,7 +115,21 @@ const Feed = () => {
         .order('created_at', { ascending: false });
 
       if (storiesError) throw storiesError;
-      setStories(storiesData as Story[]);
+      
+      // Separate user's stories from friends' stories
+      const myStories = (storiesData as Story[]).filter(s => s.user_id === user.id);
+      const otherStories = (storiesData as Story[]).filter(s => s.user_id !== user.id);
+      
+      // Group friends' stories by user_id and keep only the latest one per friend
+      const friendsStoriesMap = new Map<string, Story>();
+      otherStories.forEach(story => {
+        if (!friendsStoriesMap.has(story.user_id)) {
+          friendsStoriesMap.set(story.user_id, story);
+        }
+      });
+      
+      setUserStories(myStories);
+      setFriendsStories(Array.from(friendsStoriesMap.values()));
 
       // Load liked posts
       const { data: likesData, error: likesError } = await supabase
@@ -201,29 +227,49 @@ const Feed = () => {
       {/* Stories */}
       <div className="overflow-x-auto pb-4">
         <div className="flex gap-4 px-4 min-w-max">
-          {/* Add Story Button */}
+          {/* Your Story */}
           <div
-            onClick={() => setShowAddStory(true)}
             className="flex flex-col items-center gap-2 cursor-pointer"
           >
-            <div className="relative rounded-full p-1">
-              <Avatar className="w-16 h-16">
-                <AvatarImage src={defaultAvatar} />
-                <AvatarFallback>You</AvatarFallback>
-              </Avatar>
-              <div className="absolute bottom-0 right-0 w-5 h-5 bg-gradient-accent rounded-full flex items-center justify-center border-2 border-background">
+            <div className="relative">
+              <div 
+                className={`${userStories.length > 0 ? 'ring-2 ring-purple-500 ring-offset-2 ring-offset-background' : ''} rounded-full p-1`}
+                onClick={() => {
+                  if (userStories.length > 0) {
+                    setCurrentViewStories(userStories);
+                    setStoryIndex(0);
+                    setStoryViewerOpen(true);
+                  }
+                }}
+              >
+                <Avatar className="w-16 h-16">
+                  <AvatarImage src={currentUserProfile?.profile_picture_url || defaultAvatar} />
+                  <AvatarFallback>You</AvatarFallback>
+                </Avatar>
+              </div>
+              <div 
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setShowAddStory(true);
+                }}
+                className="absolute bottom-0 right-0 w-5 h-5 bg-gradient-accent rounded-full flex items-center justify-center border-2 border-background hover:scale-110 transition-transform"
+              >
                 <Plus className="w-3 h-3 text-accent-foreground" />
               </div>
             </div>
             <span className="text-xs text-muted-foreground">Your Story</span>
           </div>
 
-          {/* User Stories */}
-          {stories.map((story, index) => (
+          {/* Friends' Stories (one per friend) */}
+          {friendsStories.map((story) => (
             <div
               key={story.id}
               className="flex flex-col items-center gap-2 cursor-pointer"
-              onClick={() => { setStoryIndex(index); setStoryViewerOpen(true); }}
+              onClick={() => { 
+                setCurrentViewStories([story]); 
+                setStoryIndex(0); 
+                setStoryViewerOpen(true); 
+              }}
             >
               <div className="relative ring-2 ring-gradient-accent ring-offset-2 ring-offset-background rounded-full p-1">
                 <Avatar className="w-16 h-16">
@@ -354,12 +400,12 @@ const Feed = () => {
         />
       )}
       {storyViewerOpen && (
-        <StoryViewer
-          open={storyViewerOpen}
-          onOpenChange={setStoryViewerOpen}
-          stories={stories}
-          initialIndex={storyIndex}
-        />
+      <StoryViewer
+        open={storyViewerOpen}
+        onOpenChange={setStoryViewerOpen}
+        stories={currentViewStories}
+        initialIndex={storyIndex}
+      />
       )}
     </div>
   );
