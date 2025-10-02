@@ -3,9 +3,10 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Upload, Loader2, Image } from "lucide-react";
+import { Upload, Loader2, Image, Camera } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { CameraCapture } from "./CameraCapture";
 
 interface AddStoryDialogProps {
   open: boolean;
@@ -17,11 +18,11 @@ export const AddStoryDialog = ({ open, onOpenChange, onStoryAdded }: AddStoryDia
   const [imageUrl, setImageUrl] = useState("");
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [showCamera, setShowCamera] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
-  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
+  const uploadFile = async (file: File) => {
     if (!file) return;
 
     // Validate file type (images and videos)
@@ -77,6 +78,18 @@ export const AddStoryDialog = ({ open, onOpenChange, onStoryAdded }: AddStoryDia
     } finally {
       setUploading(false);
     }
+  };
+
+  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      await uploadFile(file);
+    }
+  };
+
+  const handleCameraCapture = async (file: File) => {
+    await uploadFile(file);
+    setShowCamera(false);
   };
 
   const handleSubmit = async () => {
@@ -158,24 +171,38 @@ export const AddStoryDialog = ({ open, onOpenChange, onStoryAdded }: AddStoryDia
                 </Button>
               </div>
             ) : (
-              <Button
-                type="button"
-                variant="outline"
-                className="w-full h-32 border-dashed"
-                onClick={() => fileInputRef.current?.click()}
-                disabled={uploading}
-              >
-                {uploading ? (
-                  <Loader2 className="w-6 h-6 animate-spin" />
-                ) : (
-                  <div className="flex flex-col items-center gap-2">
-                    <Image className="w-8 h-8 text-muted-foreground" />
-                    <span className="text-sm text-muted-foreground">
-                      Tap to select media
-                    </span>
-                  </div>
-                )}
-              </Button>
+              <div className="grid grid-cols-2 gap-3">
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="h-32 border-dashed flex-col"
+                  onClick={() => setShowCamera(true)}
+                  disabled={uploading}
+                >
+                  <Camera className="w-8 h-8 text-muted-foreground mb-2" />
+                  <span className="text-sm text-muted-foreground">
+                    Take Photo
+                  </span>
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="h-32 border-dashed flex-col"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={uploading}
+                >
+                  {uploading ? (
+                    <Loader2 className="w-6 h-6 animate-spin" />
+                  ) : (
+                    <>
+                      <Image className="w-8 h-8 text-muted-foreground mb-2" />
+                      <span className="text-sm text-muted-foreground">
+                        Choose Media
+                      </span>
+                    </>
+                  )}
+                </Button>
+              </div>
             )}
             <p className="text-xs text-muted-foreground">Story will expire in 24 hours</p>
           </div>
@@ -194,6 +221,11 @@ export const AddStoryDialog = ({ open, onOpenChange, onStoryAdded }: AddStoryDia
           </Button>
         </div>
       </DialogContent>
+      <CameraCapture
+        open={showCamera}
+        onOpenChange={setShowCamera}
+        onCapture={handleCameraCapture}
+      />
     </Dialog>
   );
 };

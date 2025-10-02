@@ -236,7 +236,7 @@ const Feed = () => {
       {/* Header with Points */}
       <div className="flex items-center justify-between px-4 py-3 bg-background/80 backdrop-blur-sm sticky top-0 z-20 border-b">
         <h1 className="text-xl font-bold text-purple-500">
-          TagMate
+          Taggy
         </h1>
         <PointsDisplay />
       </div>
