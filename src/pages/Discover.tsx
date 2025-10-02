@@ -158,12 +158,16 @@ const Discover = () => {
     }
   };
 
-  const filteredUsers = users.filter((user) =>
-    user.username.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    user.display_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    user.bio?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    user.interests?.some(i => i.toLowerCase().includes(searchQuery.toLowerCase()))
-  );
+  const filteredUsers = users.filter((user) => {
+    // Exclude users who are already friends
+    if (friends.has(user.id)) return false;
+    
+    // Apply search filter
+    return user.username.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      user.display_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      user.bio?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      user.interests?.some(i => i.toLowerCase().includes(searchQuery.toLowerCase()));
+  });
 
   if (loading) {
     return (

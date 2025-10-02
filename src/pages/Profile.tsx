@@ -3,7 +3,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Settings, Users, Grid3x3, LogOut, Loader2 } from "lucide-react";
+import { Settings, Users, Grid3x3, LogOut, Loader2, Plus } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -11,6 +11,7 @@ import defaultAvatar from "@/assets/default-avatar.png";
 import { EditProfileDialog } from "@/components/EditProfileDialog";
 import { FriendsList } from "@/components/FriendsList";
 import { SettingsDialog } from "@/components/SettingsDialog";
+import { AddPostDialog } from "@/components/AddPostDialog";
 
 interface Relationship {
   id: string;
@@ -37,6 +38,13 @@ interface Profile {
   interests: string[] | null;
 }
 
+interface Post {
+  id: string;
+  image_url: string | null;
+  caption: string | null;
+  created_at: string;
+}
+
 const Profile = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -48,6 +56,8 @@ const Profile = () => {
   const [showFriends, setShowFriends] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [relationship, setRelationship] = useState<Relationship | null>(null);
+  const [posts, setPosts] = useState<Post[]>([]);
+  const [showAddPost, setShowAddPost] = useState(false);
 
   useEffect(() => {
     loadProfile();
@@ -67,6 +77,7 @@ const Profile = () => {
   useEffect(() => {
     loadFriendsCount();
     loadRelationship();
+    loadPosts();
   }, [profile]);
 
   const loadFriendsCount = async () => {
@@ -144,6 +155,23 @@ const Profile = () => {
     }
   };
 
+  const loadPosts = async () => {
+    if (!profile) return;
+
+    try {
+      const { data, error } = await supabase
+        .from('posts')
+        .select('*')
+        .eq('user_id', profile.id)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      setPosts(data || []);
+    } catch (error: any) {
+      console.error('Error loading posts:', error);
+    }
+  };
+
   const handleLogout = async () => {
     await supabase.auth.signOut();
     navigate('/');
@@ -166,7 +194,7 @@ const Profile = () => {
   }
 
   const stats = {
-    posts: 0,
+    posts: posts.length,
     friends: friendsCount,
     stories: 0,
   };
@@ -303,15 +331,39 @@ const Profile = () => {
         </div>
 
         {/* Posts Grid */}
-        <div className="grid grid-cols-3 gap-3 pb-4">
-          {[1, 2, 3, 4, 5, 6].map((i) => (
-            <div
-              key={i}
-              className="aspect-square rounded-2xl bg-card/50 backdrop-blur-sm border border-primary/10 hover:border-primary/30 transition-all hover:scale-105 cursor-pointer animate-fade-in"
-              style={{ animationDelay: `${i * 50}ms` }}
-            />
-          ))}
-        </div>
+        {posts.length === 0 ? (
+          <div className="text-center py-16 animate-fade-in">
+            <div className="bg-gradient-to-br from-primary/10 to-accent/10 w-24 h-24 rounded-full flex items-center justify-center mx-auto mb-4">
+              <Grid3x3 className="w-12 h-12 text-primary" />
+            </div>
+            <p className="text-lg text-muted-foreground mb-4">Create your first post</p>
+            <Button
+              onClick={() => setShowAddPost(true)}
+              className="rounded-full bg-gradient-primary hover:scale-105 transition-transform"
+            >
+              <Plus className="w-4 h-4 mr-2" />
+              Create Post
+            </Button>
+          </div>
+        ) : (
+          <div className="grid grid-cols-3 gap-3 pb-4">
+            {posts.map((post, i) => (
+              <div
+                key={post.id}
+                className="aspect-square rounded-2xl bg-card/50 backdrop-blur-sm border border-primary/10 hover:border-primary/30 transition-all hover:scale-105 cursor-pointer animate-fade-in overflow-hidden"
+                style={{ animationDelay: `${i * 50}ms` }}
+              >
+                {post.image_url && (
+                  <img
+                    src={post.image_url}
+                    alt={post.caption || "Post"}
+                    className="w-full h-full object-cover"
+                  />
+                )}
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Dialogs */}
@@ -332,6 +384,11 @@ const Profile = () => {
             open={showFriends}
             onOpenChange={setShowFriends}
             userId={profile.id}
+          />
+          <AddPostDialog
+            open={showAddPost}
+            onOpenChange={setShowAddPost}
+            onPostAdded={loadPosts}
           />
         </>
       )}

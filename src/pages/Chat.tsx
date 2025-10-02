@@ -53,6 +53,7 @@ const Chat = () => {
   useEffect(() => {
     loadChats();
 
+    // Set up real-time subscriptions
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === 'SIGNED_OUT') {
         navigate('/');
@@ -61,7 +62,26 @@ const Chat = () => {
       }
     });
 
-    return () => subscription.unsubscribe();
+    // Subscribe to message changes to update unread counts
+    const messagesChannel = supabase
+      .channel('messages-updates')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'messages'
+        },
+        () => {
+          loadChats(); // Reload chats when messages change
+        }
+      )
+      .subscribe();
+
+    return () => {
+      subscription.unsubscribe();
+      supabase.removeChannel(messagesChannel);
+    };
   }, [navigate]);
 
   const loadChats = async () => {
@@ -298,9 +318,7 @@ const Chat = () => {
                       </AvatarFallback>
                     </Avatar>
                     {chat.unread_count > 0 && (
-                      <div className="absolute -top-1 -right-1 w-6 h-6 bg-gradient-accent rounded-full flex items-center justify-center shadow-lg animate-pulse">
-                        <span className="text-xs font-bold text-accent-foreground">{chat.unread_count}</span>
-                      </div>
+                      <div className="absolute -top-1 -right-1 w-3 h-3 bg-gradient-accent rounded-full shadow-lg animate-pulse border-2 border-background" />
                     )}
                   </div>
 
