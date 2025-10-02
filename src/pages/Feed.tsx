@@ -229,11 +229,13 @@ const Feed = () => {
               </div>
 
               {/* Post Image */}
-              <img
-                src={post.image_url}
-                alt="Post"
-                className="w-full aspect-square object-cover"
-              />
+              {post.image_url && (
+                <img
+                  src={post.image_url}
+                  alt="Post"
+                  className="w-full aspect-square object-cover"
+                />
+              )}
 
               {/* Post Actions */}
               <div className="p-4">

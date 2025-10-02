@@ -132,7 +132,17 @@ export const AddPostDialog = ({ open, onOpenChange, onPostAdded }: AddPostDialog
         </DialogHeader>
         <div className="space-y-4 py-4">
           <div className="space-y-2">
-            <Label htmlFor="image">Image/Video</Label>
+            <Label htmlFor="caption">What's on your mind?</Label>
+            <Textarea
+              id="caption"
+              placeholder="Share your thoughts..."
+              value={caption}
+              onChange={(e) => setCaption(e.target.value)}
+              rows={4}
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="image">Image/Video (optional)</Label>
             <div className="flex gap-2">
               <Input
                 id="image"
@@ -160,16 +170,6 @@ export const AddPostDialog = ({ open, onOpenChange, onPostAdded }: AddPostDialog
                 )}
               </Button>
             </div>
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="caption">Caption (optional)</Label>
-            <Textarea
-              id="caption"
-              placeholder="Write a caption..."
-              value={caption}
-              onChange={(e) => setCaption(e.target.value)}
-              rows={3}
-            />
           </div>
           <Button onClick={handleSubmit} disabled={loading} className="w-full">
             {loading ? (

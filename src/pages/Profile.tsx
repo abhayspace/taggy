@@ -3,7 +3,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Settings, Users, Grid3x3, LogOut, Loader2, Plus } from "lucide-react";
+import { Settings, Grid3x3, LogOut, Loader2, Plus, Bookmark, Image as ImageIcon } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -48,7 +48,9 @@ interface Post {
 const Profile = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const [activeTab, setActiveTab] = useState<"posts" | "tagged">("posts");
+  const [activeTab, setActiveTab] = useState<"posts" | "gallery" | "collection">("posts");
+  const [pressTimer, setPressTimer] = useState<NodeJS.Timeout | null>(null);
+  const [pressedPostId, setPressedPostId] = useState<string | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
   const [friendsCount, setFriendsCount] = useState(0);
@@ -170,6 +172,49 @@ const Profile = () => {
       setPosts(data || []);
     } catch (error: any) {
       console.error('Error loading posts:', error);
+    }
+  };
+
+  const handleDeletePost = async (postId: string) => {
+    try {
+      const { error } = await supabase
+        .from('posts')
+        .delete()
+        .eq('id', postId)
+        .eq('user_id', profile?.id);
+
+      if (error) throw error;
+
+      toast({
+        title: "Post deleted",
+        description: "Your post has been deleted successfully",
+      });
+
+      loadPosts();
+    } catch (error: any) {
+      toast({
+        title: "Error deleting post",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handlePressStart = (postId: string) => {
+    const timer = setTimeout(() => {
+      setPressedPostId(postId);
+      if (window.confirm("Delete this post?")) {
+        handleDeletePost(postId);
+      }
+      setPressedPostId(null);
+    }, 500);
+    setPressTimer(timer);
+  };
+
+  const handlePressEnd = () => {
+    if (pressTimer) {
+      clearTimeout(pressTimer);
+      setPressTimer(null);
     }
   };
 
@@ -316,53 +361,120 @@ const Profile = () => {
             )}
           </button>
           <button
-            onClick={() => setActiveTab("tagged")}
+            onClick={() => setActiveTab("gallery")}
             className={`flex items-center gap-2 pb-4 px-2 font-semibold transition-all relative ${
-              activeTab === "tagged"
+              activeTab === "gallery"
                 ? "text-primary"
                 : "text-muted-foreground hover:text-foreground"
             }`}
           >
-            <Users className="w-5 h-5" />
-            Tagged
-            {activeTab === "tagged" && (
+            <ImageIcon className="w-5 h-5" />
+            Gallery
+            {activeTab === "gallery" && (
+              <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-primary rounded-full" />
+            )}
+          </button>
+          <button
+            onClick={() => setActiveTab("collection")}
+            className={`flex items-center gap-2 pb-4 px-2 font-semibold transition-all relative ${
+              activeTab === "collection"
+                ? "text-primary"
+                : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            <Bookmark className="w-5 h-5" />
+            Collection
+            {activeTab === "collection" && (
               <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-primary rounded-full" />
             )}
           </button>
         </div>
 
-        {/* Posts Grid */}
-        {posts.length === 0 ? (
-          <div className="text-center py-16 animate-fade-in">
-            <div className="bg-gradient-to-br from-primary/10 to-accent/10 w-24 h-24 rounded-full flex items-center justify-center mx-auto mb-4">
-              <Grid3x3 className="w-12 h-12 text-primary" />
-            </div>
-            <p className="text-lg text-muted-foreground mb-4">Create your first post</p>
-            <Button
-              onClick={() => setShowAddPost(true)}
-              className="rounded-full bg-gradient-primary hover:scale-105 transition-transform"
-            >
-              <Plus className="w-4 h-4 mr-2" />
-              Create Post
-            </Button>
-          </div>
-        ) : (
-          <div className="grid grid-cols-3 gap-3 pb-4">
-            {posts.map((post, i) => (
-              <div
-                key={post.id}
-                className="aspect-square rounded-2xl bg-card/50 backdrop-blur-sm border border-primary/10 hover:border-primary/30 transition-all hover:scale-105 cursor-pointer animate-fade-in overflow-hidden"
-                style={{ animationDelay: `${i * 50}ms` }}
+        {/* Content based on active tab */}
+        {activeTab === "posts" && (
+          posts.length === 0 ? (
+            <div className="text-center py-16 animate-fade-in">
+              <div className="bg-gradient-to-br from-primary/10 to-accent/10 w-24 h-24 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Grid3x3 className="w-12 h-12 text-primary" />
+              </div>
+              <p className="text-lg text-muted-foreground mb-4">Create your first post</p>
+              <Button
+                onClick={() => setShowAddPost(true)}
+                className="rounded-full bg-gradient-primary hover:scale-105 transition-transform"
               >
-                {post.image_url && (
+                <Plus className="w-4 h-4 mr-2" />
+                Create Post
+              </Button>
+            </div>
+          ) : (
+            <div className="space-y-4 pb-4">
+              {posts.map((post, i) => (
+                <div
+                  key={post.id}
+                  className="rounded-2xl bg-card/50 backdrop-blur-sm border border-primary/10 hover:border-primary/30 transition-all animate-fade-in overflow-hidden"
+                  style={{ animationDelay: `${i * 50}ms` }}
+                  onTouchStart={() => handlePressStart(post.id)}
+                  onTouchEnd={handlePressEnd}
+                  onMouseDown={() => handlePressStart(post.id)}
+                  onMouseUp={handlePressEnd}
+                  onMouseLeave={handlePressEnd}
+                >
+                  {post.image_url && (
+                    <img
+                      src={post.image_url}
+                      alt={post.caption || "Post"}
+                      className="w-full object-cover"
+                    />
+                  )}
+                  {post.caption && (
+                    <div className="p-4">
+                      <p className="text-foreground">{post.caption}</p>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          )
+        )}
+
+        {activeTab === "gallery" && (
+          posts.filter(p => p.image_url).length === 0 ? (
+            <div className="text-center py-16 animate-fade-in">
+              <div className="bg-gradient-to-br from-primary/10 to-accent/10 w-24 h-24 rounded-full flex items-center justify-center mx-auto mb-4">
+                <ImageIcon className="w-12 h-12 text-primary" />
+              </div>
+              <p className="text-lg text-muted-foreground">No media posts yet</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-3 gap-3 pb-4">
+              {posts.filter(p => p.image_url).map((post, i) => (
+                <div
+                  key={post.id}
+                  className="aspect-square rounded-2xl bg-card/50 backdrop-blur-sm border border-primary/10 hover:border-primary/30 transition-all hover:scale-105 cursor-pointer animate-fade-in overflow-hidden"
+                  style={{ animationDelay: `${i * 50}ms` }}
+                  onTouchStart={() => handlePressStart(post.id)}
+                  onTouchEnd={handlePressEnd}
+                  onMouseDown={() => handlePressStart(post.id)}
+                  onMouseUp={handlePressEnd}
+                  onMouseLeave={handlePressEnd}
+                >
                   <img
                     src={post.image_url}
                     alt={post.caption || "Post"}
                     className="w-full h-full object-cover"
                   />
-                )}
-              </div>
-            ))}
+                </div>
+              ))}
+            </div>
+          )
+        )}
+
+        {activeTab === "collection" && (
+          <div className="text-center py-16 animate-fade-in">
+            <div className="bg-gradient-to-br from-primary/10 to-accent/10 w-24 h-24 rounded-full flex items-center justify-center mx-auto mb-4">
+              <Bookmark className="w-12 h-12 text-primary" />
+            </div>
+            <p className="text-lg text-muted-foreground">No saved posts yet</p>
           </div>
         )}
       </div>
