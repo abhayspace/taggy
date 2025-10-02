@@ -346,6 +346,10 @@ export type Database = {
         Args: { _post_user_id: string }
         Returns: boolean
       }
+      is_conversation_participant: {
+        Args: { _conversation_id: string; _user_id: string }
+        Returns: boolean
+      }
       is_friend_or_self: {
         Args: { _profile_id: string; _user_id: string }
         Returns: boolean
