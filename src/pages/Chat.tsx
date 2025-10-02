@@ -156,86 +156,90 @@ const Chat = () => {
   }
 
   return (
-    <div className="h-full flex flex-col pb-20">
-      {/* Header */}
-      <div className="bg-gradient-accent p-6 rounded-b-3xl">
-        <div className="flex items-center justify-between mb-2">
-          <h1 className="text-3xl font-bold text-accent-foreground flex items-center gap-2">
-            <MessageCircle className="w-8 h-8" />
-            Messages
-          </h1>
+    <div className="min-h-screen bg-background pb-20">
+      {/* Header with Gradient */}
+      <div className="bg-gradient-to-br from-primary via-secondary to-accent p-6 rounded-b-[3rem] shadow-glow-primary animate-fade-in">
+        <div className="flex items-center justify-between mb-3">
+          <div>
+            <h1 className="text-4xl font-bold text-primary-foreground flex items-center gap-3 mb-1">
+              <MessageCircle className="w-10 h-10" />
+              Messages
+            </h1>
+            <p className="text-primary-foreground/90 text-sm">Stay connected with your friends</p>
+          </div>
           <Button
             onClick={() => setShowStartChat(true)}
             size="icon"
-            className="rounded-full bg-accent-foreground/20 hover:bg-accent-foreground/30"
+            className="rounded-full bg-white/20 hover:bg-white/30 backdrop-blur-sm shadow-lg hover:scale-110 transition-all"
           >
-            <Plus className="w-5 h-5 text-accent-foreground" />
+            <Plus className="w-6 h-6 text-white" />
           </Button>
         </div>
-        <p className="text-accent-foreground/80">Stay connected with your friends</p>
       </div>
 
       {/* Search Bar */}
-      <div className="p-4">
+      <div className="p-6 -mt-4">
         <div className="relative">
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+          <Search className="absolute left-5 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
           <Input
             type="text"
             placeholder="Search messages..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-12 h-12 rounded-2xl bg-card"
+            className="pl-14 h-14 rounded-3xl bg-card/80 backdrop-blur-sm border-2 border-primary/10 focus:border-primary shadow-sm"
           />
         </div>
       </div>
 
       {/* Chat List */}
-      <div className="flex-1 overflow-auto px-4 pb-4">
-        <div className="space-y-2">
-          {filteredChats.map((chat) => (
+      <div className="px-6 space-y-3">
+        {filteredChats.length === 0 ? (
+          <div className="text-center py-16 animate-fade-in">
+            <div className="bg-gradient-to-br from-primary/10 to-accent/10 w-24 h-24 rounded-full flex items-center justify-center mx-auto mb-4">
+              <MessageCircle className="w-12 h-12 text-primary" />
+            </div>
+            <p className="text-lg text-muted-foreground">No messages yet</p>
+            <p className="text-sm text-muted-foreground/70 mt-1">Start a conversation with your friends</p>
+          </div>
+        ) : (
+          filteredChats.map((chat, index) => (
             <Card
               key={chat.conversation_id}
               onClick={() => navigate(`/conversation/${chat.conversation_id}`)}
-              className="p-4 rounded-2xl hover:shadow-glow-accent transition-all cursor-pointer animate-fade-in"
+              className="p-5 rounded-3xl hover:shadow-lg hover:scale-[1.02] active:scale-[0.98] transition-all cursor-pointer bg-card/50 backdrop-blur-sm border border-primary/10 animate-fade-in hover:border-primary/30"
+              style={{ animationDelay: `${index * 50}ms` }}
             >
               <div className="flex items-center gap-4">
                 <div className="relative">
-                  <Avatar className="w-14 h-14">
+                  <Avatar className="w-16 h-16 border-2 border-primary/20 shadow-md">
                     <AvatarImage src={chat.other_user.profile_picture_url || defaultAvatar} />
-                    <AvatarFallback>{(chat.other_user.display_name || chat.other_user.username)[0].toUpperCase()}</AvatarFallback>
+                    <AvatarFallback className="bg-gradient-primary text-primary-foreground text-xl">
+                      {(chat.other_user.display_name || chat.other_user.username)[0].toUpperCase()}
+                    </AvatarFallback>
                   </Avatar>
+                  {chat.unread_count > 0 && (
+                    <div className="absolute -top-1 -right-1 w-6 h-6 bg-gradient-accent rounded-full flex items-center justify-center shadow-lg animate-pulse">
+                      <span className="text-xs font-bold text-accent-foreground">{chat.unread_count}</span>
+                    </div>
+                  )}
                 </div>
 
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-center justify-between mb-1">
-                    <h3 className="font-semibold truncate">{chat.other_user.display_name || chat.other_user.username}</h3>
+                  <div className="flex items-center justify-between mb-2">
+                    <h3 className="font-bold text-lg truncate">{chat.other_user.display_name || chat.other_user.username}</h3>
                     {chat.last_message && (
-                      <span className="text-xs text-muted-foreground">
+                      <span className="text-xs text-muted-foreground font-medium">
                         {formatDistanceToNow(new Date(chat.last_message.created_at), { addSuffix: true })}
                       </span>
                     )}
                   </div>
-                  <div className="flex items-center justify-between">
-                    <p className="text-sm text-muted-foreground truncate">
-                      {chat.last_message?.content || "No messages yet"}
-                    </p>
-                    {chat.unread_count > 0 && (
-                      <Badge className="bg-gradient-accent text-accent-foreground rounded-full min-w-[20px] h-5 flex items-center justify-center">
-                        {chat.unread_count}
-                      </Badge>
-                    )}
-                  </div>
+                  <p className="text-sm text-muted-foreground truncate">
+                    {chat.last_message?.content || "No messages yet"}
+                  </p>
                 </div>
               </div>
             </Card>
-          ))}
-        </div>
-
-        {filteredChats.length === 0 && (
-          <div className="text-center py-12">
-            <MessageCircle className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
-            <p className="text-muted-foreground">No messages found</p>
-          </div>
+          ))
         )}
       </div>
 

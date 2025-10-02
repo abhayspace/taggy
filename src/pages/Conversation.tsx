@@ -3,7 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { ArrowLeft, Send, Loader2 } from "lucide-react";
+import { ArrowLeft, Send, Loader2, MessageCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import defaultAvatar from "@/assets/default-avatar.png";
@@ -172,78 +172,93 @@ const Conversation = () => {
   }
 
   return (
-    <div className="h-screen flex flex-col pb-20">
+    <div className="h-screen flex flex-col bg-background">
       {/* Header */}
-      <div className="bg-gradient-accent p-4 flex items-center gap-3">
+      <div className="bg-gradient-to-r from-primary via-secondary to-accent p-5 flex items-center gap-4 shadow-lg animate-fade-in">
         <Button
           variant="ghost"
           size="icon"
           onClick={() => navigate('/chat')}
-          className="text-accent-foreground"
+          className="text-white hover:bg-white/20 rounded-full"
         >
           <ArrowLeft className="w-5 h-5" />
         </Button>
         
         {otherUser && (
           <>
-            <Avatar className="w-10 h-10">
+            <Avatar className="w-12 h-12 border-2 border-white/50 shadow-lg">
               <AvatarImage src={otherUser.profile_picture_url || defaultAvatar} />
-              <AvatarFallback>
+              <AvatarFallback className="bg-gradient-primary text-primary-foreground">
                 {(otherUser.display_name || otherUser.username)[0].toUpperCase()}
               </AvatarFallback>
             </Avatar>
             <div className="flex-1">
-              <h2 className="font-semibold text-accent-foreground">
+              <h2 className="font-bold text-white text-lg">
                 {otherUser.display_name || otherUser.username}
               </h2>
-              <p className="text-xs text-accent-foreground/80">@{otherUser.username}</p>
+              <p className="text-sm text-white/80">@{otherUser.username}</p>
             </div>
           </>
         )}
       </div>
 
       {/* Messages */}
-      <div className="flex-1 overflow-auto p-4 space-y-4">
-        {messages.map((message) => {
-          const isOwn = message.sender_id === currentUserId;
-          return (
-            <div
-              key={message.id}
-              className={`flex ${isOwn ? 'justify-end' : 'justify-start'}`}
-            >
-              <div
-                className={`max-w-[70%] rounded-2xl px-4 py-2 ${
-                  isOwn
-                    ? 'bg-gradient-primary text-primary-foreground'
-                    : 'bg-card'
-                }`}
-              >
-                <p className="text-sm">{message.content}</p>
-                <p className={`text-xs mt-1 ${isOwn ? 'text-primary-foreground/70' : 'text-muted-foreground'}`}>
-                  {formatDistanceToNow(new Date(message.created_at), { addSuffix: true })}
-                </p>
+      <div className="flex-1 overflow-auto p-6 space-y-4 bg-gradient-to-b from-background to-muted/20">
+        {messages.length === 0 ? (
+          <div className="h-full flex items-center justify-center animate-fade-in">
+            <div className="text-center">
+              <div className="w-20 h-20 bg-gradient-to-br from-primary/20 to-accent/20 rounded-full flex items-center justify-center mx-auto mb-4">
+                <MessageCircle className="w-10 h-10 text-primary" />
               </div>
+              <p className="text-muted-foreground">No messages yet</p>
+              <p className="text-sm text-muted-foreground/70 mt-1">Say hello!</p>
             </div>
-          );
-        })}
+          </div>
+        ) : (
+          messages.map((message, index) => {
+            const isOwn = message.sender_id === currentUserId;
+            return (
+              <div
+                key={message.id}
+                className={`flex ${isOwn ? 'justify-end' : 'justify-start'} animate-fade-in`}
+                style={{ animationDelay: `${index * 20}ms` }}
+              >
+                <div
+                  className={`max-w-[75%] rounded-3xl px-5 py-3 shadow-md ${
+                    isOwn
+                      ? 'bg-gradient-to-br from-primary to-secondary text-primary-foreground rounded-br-md'
+                      : 'bg-card border border-primary/10 rounded-bl-md'
+                  }`}
+                >
+                  <p className={`text-sm leading-relaxed ${isOwn ? 'text-primary-foreground' : 'text-foreground'}`}>
+                    {message.content}
+                  </p>
+                  <p className={`text-xs mt-2 ${isOwn ? 'text-primary-foreground/80' : 'text-muted-foreground'}`}>
+                    {formatDistanceToNow(new Date(message.created_at), { addSuffix: true })}
+                  </p>
+                </div>
+              </div>
+            );
+          })
+        )}
         <div ref={messagesEndRef} />
       </div>
 
       {/* Input */}
-      <form onSubmit={sendMessage} className="p-4 border-t">
-        <div className="flex gap-2">
+      <form onSubmit={sendMessage} className="p-5 bg-card/50 backdrop-blur-sm border-t border-primary/10">
+        <div className="flex gap-3 items-center">
           <Input
             value={newMessage}
             onChange={(e) => setNewMessage(e.target.value)}
             placeholder="Type a message..."
-            className="rounded-full"
+            className="rounded-full h-12 px-6 bg-background border-2 border-primary/10 focus:border-primary transition-all"
             disabled={sending}
           />
           <Button
             type="submit"
             size="icon"
             disabled={sending || !newMessage.trim()}
-            className="rounded-full bg-gradient-primary"
+            className="rounded-full h-12 w-12 bg-gradient-to-br from-primary to-secondary hover:scale-110 transition-all shadow-lg disabled:opacity-50"
           >
             {sending ? (
               <Loader2 className="w-5 h-5 animate-spin" />

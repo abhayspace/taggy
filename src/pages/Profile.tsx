@@ -121,129 +121,134 @@ const Profile = () => {
   };
 
   return (
-    <div className="h-full overflow-auto pb-20">
-      {/* Header with gradient */}
-      <div className="bg-gradient-primary h-32 relative">
+    <div className="min-h-screen bg-background pb-20 overflow-auto">
+      {/* Header with gradient and pattern */}
+      <div className="relative h-48 bg-gradient-to-br from-primary via-secondary to-accent overflow-hidden">
+        <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiNmZmYiIGZpbGwtb3BhY2l0eT0iMC4xIj48cGF0aCBkPSJNMzYgMzRjMC0yIDItNCAyLTRzMiAyIDIgNHYyYzAgMiAyIDQgMiA0czIgMiA0IDJ2MmMwIDItMiA0LTIgNHMtMiAyLTQgMkg0MGMtMi0yLTItNC0yLTR2LTJjMC0yIDItNCAxLTRzMi0yIDItNHYtMnoiLz48L2c+PC9nPjwvc3ZnPg==')] opacity-20"></div>
         <Button
           onClick={handleLogout}
           variant="ghost"
-          className="absolute top-4 right-4 text-primary-foreground"
+          className="absolute top-6 right-6 text-white hover:bg-white/20 backdrop-blur-sm rounded-full"
         >
           <LogOut className="w-5 h-5 mr-2" />
           Logout
         </Button>
       </div>
 
-      {/* Profile Info */}
-      <div className="px-6 -mt-16 relative z-10">
-        <div className="flex items-end gap-4 mb-6">
-          <Avatar className="w-28 h-28 border-4 border-background shadow-glow-primary">
-            <AvatarImage src={profile.profile_picture_url || defaultAvatar} />
-            <AvatarFallback className="text-3xl bg-gradient-primary">
-              {profile.username?.[0]?.toUpperCase() || "U"}
-            </AvatarFallback>
-          </Avatar>
-
-          <Button 
-            onClick={() => setShowEditProfile(true)}
-            className="mb-2 rounded-full bg-gradient-secondary shadow-glow-secondary hover:scale-105 transition-transform"
-          >
-            <Settings className="w-4 h-4 mr-2" />
-            Edit Profile
-          </Button>
-        </div>
-
-        {/* Username and Bio */}
-        <div className="mb-6">
-          <h1 className="text-2xl font-bold mb-1">{profile.display_name || profile.username}</h1>
-          <p className="text-sm text-muted-foreground mb-1">@{profile.username}</p>
-          {profile.age && (
-            <p className="text-sm text-muted-foreground mb-1">{profile.age} years old</p>
-          )}
-          <p className="text-muted-foreground mb-3">
-            {profile.bio || "No bio yet ✨"}
-          </p>
-
-          {/* Interests */}
-          {profile.interests && profile.interests.length > 0 && (
-            <div className="flex flex-wrap gap-2 mb-4">
-              {profile.interests.map((interest) => (
-                <Badge
-                  key={interest}
-                  className="bg-gradient-accent text-accent-foreground rounded-full px-3 py-1"
-                >
-                  {interest}
-                </Badge>
-              ))}
+      {/* Profile Card */}
+      <div className="px-6 -mt-20 relative z-10 animate-fade-in">
+        <Card className="p-6 rounded-3xl bg-card/95 backdrop-blur-md border-2 border-primary/20 shadow-2xl">
+          <div className="flex items-end gap-5 mb-6">
+            <div className="relative">
+              <Avatar className="w-32 h-32 border-4 border-background shadow-2xl ring-4 ring-primary/20">
+                <AvatarImage src={profile.profile_picture_url || defaultAvatar} />
+                <AvatarFallback className="text-4xl bg-gradient-primary text-primary-foreground">
+                  {profile.username?.[0]?.toUpperCase() || "U"}
+                </AvatarFallback>
+              </Avatar>
+              <div className="absolute -bottom-2 -right-2 w-10 h-10 bg-gradient-accent rounded-full flex items-center justify-center shadow-lg">
+                <Heart className="w-5 h-5 text-accent-foreground" fill="currentColor" />
+              </div>
             </div>
-          )}
-        </div>
 
-        {/* Stats */}
-        <div className="grid grid-cols-3 gap-4 mb-6">
-          <Card className="p-4 text-center rounded-2xl bg-card/50 backdrop-blur-sm">
-            <p className="text-2xl font-bold text-primary">{stats.posts}</p>
-            <p className="text-sm text-muted-foreground">Posts</p>
-          </Card>
-          <Card className="p-4 text-center rounded-2xl bg-card/50 backdrop-blur-sm">
-            <p className="text-2xl font-bold text-secondary">{stats.friends}</p>
-            <p className="text-sm text-muted-foreground">Friends</p>
-          </Card>
-          <Card className="p-4 text-center rounded-2xl bg-card/50 backdrop-blur-sm">
-            <p className="text-2xl font-bold text-accent">{stats.stories}</p>
-            <p className="text-sm text-muted-foreground">Stories</p>
-          </Card>
-        </div>
+            <Button 
+              onClick={() => setShowEditProfile(true)}
+              className="mb-2 rounded-full bg-gradient-secondary hover:scale-105 transition-transform shadow-lg px-6"
+            >
+              <Settings className="w-4 h-4 mr-2" />
+              Edit Profile
+            </Button>
+          </div>
 
-        {/* Relationship Status */}
-        <Card className="p-4 rounded-2xl mb-6 bg-gradient-warm/10 border-accent/20">
-          <div className="flex items-center gap-3">
-            <Heart className="w-6 h-6 text-accent" fill="currentColor" />
-            <div>
-              <p className="font-semibold">Single</p>
-              <p className="text-sm text-muted-foreground">Not in a relationship</p>
-            </div>
+          {/* Username and Bio */}
+          <div className="mb-6">
+            <h1 className="text-3xl font-bold bg-gradient-primary bg-clip-text text-transparent mb-2">
+              {profile.display_name || profile.username}
+            </h1>
+            <p className="text-sm text-muted-foreground mb-2 flex items-center gap-2">
+              <span className="text-primary">@{profile.username}</span>
+              {profile.age && (
+                <>
+                  <span>•</span>
+                  <span>{profile.age} years old</span>
+                </>
+              )}
+            </p>
+            <p className="text-foreground/80 mb-4 leading-relaxed">
+              {profile.bio || "No bio yet ✨"}
+            </p>
+
+            {/* Interests */}
+            {profile.interests && profile.interests.length > 0 && (
+              <div className="flex flex-wrap gap-2">
+                {profile.interests.map((interest, index) => (
+                  <Badge
+                    key={interest}
+                    className="bg-gradient-accent text-accent-foreground rounded-full px-4 py-1.5 shadow-sm animate-fade-in hover:scale-105 transition-transform"
+                    style={{ animationDelay: `${index * 50}ms` }}
+                  >
+                    {interest}
+                  </Badge>
+                ))}
+              </div>
+            )}
           </div>
         </Card>
 
+        {/* Stats Cards */}
+        <div className="grid grid-cols-3 gap-4 my-6">
+          <Card className="p-5 text-center rounded-2xl bg-gradient-to-br from-primary/10 to-primary/5 border-2 border-primary/20 hover:shadow-glow-primary transition-all hover:scale-105 animate-fade-in">
+            <p className="text-3xl font-bold bg-gradient-primary bg-clip-text text-transparent mb-1">{stats.posts}</p>
+            <p className="text-sm font-medium text-muted-foreground">Posts</p>
+          </Card>
+          <Card className="p-5 text-center rounded-2xl bg-gradient-to-br from-secondary/10 to-secondary/5 border-2 border-secondary/20 hover:shadow-glow-secondary transition-all hover:scale-105 animate-fade-in" style={{ animationDelay: '50ms' }}>
+            <p className="text-3xl font-bold bg-gradient-secondary bg-clip-text text-transparent mb-1">{stats.friends}</p>
+            <p className="text-sm font-medium text-muted-foreground">Friends</p>
+          </Card>
+          <Card className="p-5 text-center rounded-2xl bg-gradient-to-br from-accent/10 to-accent/5 border-2 border-accent/20 hover:shadow-glow-accent transition-all hover:scale-105 animate-fade-in" style={{ animationDelay: '100ms' }}>
+            <p className="text-3xl font-bold bg-gradient-accent bg-clip-text text-transparent mb-1">{stats.stories}</p>
+            <p className="text-sm font-medium text-muted-foreground">Stories</p>
+          </Card>
+        </div>
+
         {/* Tab Navigation */}
-        <div className="flex gap-4 border-b mb-6">
+        <div className="flex gap-6 border-b-2 mb-6 animate-fade-in" style={{ animationDelay: '150ms' }}>
           <button
             onClick={() => setActiveTab("posts")}
-            className={`flex items-center gap-2 pb-3 px-4 font-semibold transition-colors relative ${
+            className={`flex items-center gap-2 pb-4 px-2 font-bold transition-all relative ${
               activeTab === "posts"
-                ? "text-primary"
-                : "text-muted-foreground"
+                ? "text-primary scale-105"
+                : "text-muted-foreground hover:text-foreground"
             }`}
           >
             <Grid3x3 className="w-5 h-5" />
             Posts
             {activeTab === "posts" && (
-              <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-primary rounded-full" />
+              <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-primary rounded-full shadow-glow-primary" />
             )}
           </button>
           <button
             onClick={() => setActiveTab("tagged")}
-            className={`flex items-center gap-2 pb-3 px-4 font-semibold transition-colors relative ${
+            className={`flex items-center gap-2 pb-4 px-2 font-bold transition-all relative ${
               activeTab === "tagged"
-                ? "text-primary"
-                : "text-muted-foreground"
+                ? "text-primary scale-105"
+                : "text-muted-foreground hover:text-foreground"
             }`}
           >
             <Users className="w-5 h-5" />
             Tagged
             {activeTab === "tagged" && (
-              <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-primary rounded-full" />
+              <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-primary rounded-full shadow-glow-primary" />
             )}
           </button>
         </div>
 
         {/* Posts Grid */}
-        <div className="grid grid-cols-3 gap-2 pb-6">
+        <div className="grid grid-cols-3 gap-3 pb-6">
           {[1, 2, 3, 4, 5, 6].map((i) => (
             <div
               key={i}
-              className="aspect-square rounded-xl bg-gradient-secondary/20 animate-fade-in"
+              className="aspect-square rounded-2xl bg-gradient-to-br from-primary/5 to-secondary/5 hover:from-primary/10 hover:to-secondary/10 border border-primary/10 hover:border-primary/30 transition-all hover:scale-105 cursor-pointer animate-fade-in"
               style={{ animationDelay: `${i * 50}ms` }}
             />
           ))}
