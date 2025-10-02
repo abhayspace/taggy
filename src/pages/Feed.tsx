@@ -9,6 +9,7 @@ import { useNavigate } from "react-router-dom";
 import defaultAvatar from "@/assets/default-avatar.png";
 import { AddPostDialog } from "@/components/AddPostDialog";
 import { AddStoryDialog } from "@/components/AddStoryDialog";
+import { PostCommentsDialog } from "@/components/PostCommentsDialog";
 import { formatDistanceToNow } from "date-fns";
 
 interface Post {
@@ -46,6 +47,7 @@ const Feed = () => {
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [showAddPost, setShowAddPost] = useState(false);
   const [showAddStory, setShowAddStory] = useState(false);
+  const [selectedPostForComments, setSelectedPostForComments] = useState<string | null>(null);
   const { toast } = useToast();
   const navigate = useNavigate();
 
@@ -153,6 +155,26 @@ const Feed = () => {
     }
   };
 
+  const handleShare = async (post: Post) => {
+    try {
+      if (navigator.share) {
+        await navigator.share({
+          title: `Post by ${post.profiles.display_name || post.profiles.username}`,
+          text: post.caption || "",
+          url: window.location.href,
+        });
+      } else {
+        await navigator.clipboard.writeText(window.location.href);
+        toast({
+          title: "Link copied",
+          description: "Post link copied to clipboard",
+        });
+      }
+    } catch (error: any) {
+      console.error("Error sharing:", error);
+    }
+  };
+
   if (loading) {
     return (
       <div className="h-screen flex items-center justify-center">
@@ -257,6 +279,7 @@ const Feed = () => {
                   <Button
                     variant="ghost"
                     size="icon"
+                    onClick={() => setSelectedPostForComments(post.id)}
                     className="hover:scale-110 transition-transform"
                   >
                     <MessageCircle className="w-6 h-6" />
@@ -264,6 +287,7 @@ const Feed = () => {
                   <Button
                     variant="ghost"
                     size="icon"
+                    onClick={() => handleShare(post)}
                     className="hover:scale-110 transition-transform"
                   >
                     <Send className="w-6 h-6" />
@@ -276,7 +300,10 @@ const Feed = () => {
                     <span className="font-semibold">{post.profiles.display_name || post.profiles.username}</span> {post.caption}
                   </p>
                 )}
-                <p className="text-sm text-muted-foreground mt-1 cursor-pointer">
+                <p
+                  className="text-sm text-muted-foreground mt-1 cursor-pointer hover:text-foreground"
+                  onClick={() => setSelectedPostForComments(post.id)}
+                >
                   View all {post.comments_count} comments
                 </p>
               </div>
@@ -305,6 +332,13 @@ const Feed = () => {
         onOpenChange={setShowAddStory}
         onStoryAdded={loadData}
       />
+      {selectedPostForComments && (
+        <PostCommentsDialog
+          open={!!selectedPostForComments}
+          onOpenChange={(open) => !open && setSelectedPostForComments(null)}
+          postId={selectedPostForComments}
+        />
+      )}
     </div>
   );
 };

@@ -129,33 +129,46 @@ export const AddStoryDialog = ({ open, onOpenChange, onStoryAdded }: AddStoryDia
         <div className="space-y-4 py-4">
           <div className="space-y-2">
             <Label htmlFor="story-image">Image/Video</Label>
-            <div className="flex gap-2">
-              <Input
-                id="story-image"
-                placeholder="Paste URL or upload file"
-                value={imageUrl}
-                onChange={(e) => setImageUrl(e.target.value)}
-              />
-              <input
-                type="file"
-                ref={fileInputRef}
-                onChange={handleFileUpload}
-                accept="image/*,video/*"
-                className="hidden"
-              />
+            <input
+              type="file"
+              ref={fileInputRef}
+              onChange={handleFileUpload}
+              accept="image/*,video/*"
+              className="hidden"
+            />
+            {imageUrl ? (
+              <div className="relative rounded-lg overflow-hidden border">
+                <img src={imageUrl} alt="Preview" className="w-full h-48 object-cover" />
+                <Button
+                  type="button"
+                  variant="destructive"
+                  size="sm"
+                  className="absolute top-2 right-2"
+                  onClick={() => setImageUrl("")}
+                >
+                  Remove
+                </Button>
+              </div>
+            ) : (
               <Button
                 type="button"
                 variant="outline"
+                className="w-full h-32 border-dashed"
                 onClick={() => fileInputRef.current?.click()}
                 disabled={uploading}
               >
                 {uploading ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <Loader2 className="w-6 h-6 animate-spin" />
                 ) : (
-                  <Image className="w-4 h-4" />
+                  <div className="flex flex-col items-center gap-2">
+                    <Image className="w-8 h-8 text-muted-foreground" />
+                    <span className="text-sm text-muted-foreground">
+                      Tap to select media
+                    </span>
+                  </div>
                 )}
               </Button>
-            </div>
+            )}
             <p className="text-xs text-muted-foreground">Story will expire in 24 hours</p>
           </div>
           <Button onClick={handleSubmit} disabled={loading} className="w-full">

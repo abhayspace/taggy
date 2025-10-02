@@ -340,7 +340,7 @@ const Profile = () => {
           </Card>
           <Card className="p-5 text-center rounded-2xl bg-card/50 backdrop-blur-sm border-2 border-primary/10 hover:shadow-lg transition-all hover:scale-105 animate-fade-in" style={{ animationDelay: '100ms' }}>
             <p className="text-3xl font-bold bg-gradient-primary bg-clip-text text-transparent mb-1">{stats.collections}</p>
-            <p className="text-sm font-medium text-muted-foreground">Collections</p>
+            <p className="text-xs font-medium text-muted-foreground">Collections</p>
           </Card>
         </div>
 
@@ -348,7 +348,7 @@ const Profile = () => {
         <div className="flex gap-6 border-b-2 mb-4 animate-fade-in" style={{ animationDelay: '150ms' }}>
           <button
             onClick={() => setActiveTab("posts")}
-            className={`flex items-center gap-2 pb-4 px-2 text-sm font-medium transition-all relative ${
+            className={`flex items-center gap-2 pb-4 px-2 text-xs font-medium transition-all relative ${
               activeTab === "posts"
                 ? "text-primary"
                 : "text-muted-foreground hover:text-foreground"
@@ -362,7 +362,7 @@ const Profile = () => {
           </button>
           <button
             onClick={() => setActiveTab("gallery")}
-            className={`flex items-center gap-2 pb-4 px-2 text-sm font-medium transition-all relative ${
+            className={`flex items-center gap-2 pb-4 px-2 text-xs font-medium transition-all relative ${
               activeTab === "gallery"
                 ? "text-primary"
                 : "text-muted-foreground hover:text-foreground"
@@ -376,7 +376,7 @@ const Profile = () => {
           </button>
           <button
             onClick={() => setActiveTab("collection")}
-            className={`flex items-center gap-2 pb-4 px-2 text-sm font-medium transition-all relative ${
+            className={`flex items-center gap-2 pb-4 px-2 text-xs font-medium transition-all relative ${
               activeTab === "collection"
                 ? "text-primary"
                 : "text-muted-foreground hover:text-foreground"
