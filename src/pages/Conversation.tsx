@@ -453,9 +453,16 @@ const Conversation = () => {
                   <p className={`text-sm leading-relaxed ${isOwn ? 'text-primary-foreground' : 'text-foreground'}`}>
                     {message.content}
                   </p>
-                  <p className={`text-xs mt-2 ${isOwn ? 'text-primary-foreground/80' : 'text-muted-foreground'}`}>
-                    {formatDistanceToNow(new Date(message.created_at), { addSuffix: true })}
-                  </p>
+                  <div className={`flex items-center gap-1 mt-2 ${isOwn ? 'justify-end' : 'justify-start'}`}>
+                    <p className={`text-xs ${isOwn ? 'text-primary-foreground/80' : 'text-muted-foreground'}`}>
+                      {formatDistanceToNow(new Date(message.created_at), { addSuffix: true })}
+                    </p>
+                    {isOwn && (
+                      <span className={`text-xs ${message.read ? 'text-blue-400' : 'text-primary-foreground/60'}`}>
+                        {message.read ? '✓✓' : '✓'}
+                      </span>
+                    )}
+                  </div>
                 </div>
               </div>
             );

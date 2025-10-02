@@ -7,12 +7,14 @@ const BottomNav = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const [unreadCount, setUnreadCount] = useState(0);
+  const [pendingRequestsCount, setPendingRequestsCount] = useState(0);
 
   useEffect(() => {
     loadUnreadCount();
+    loadPendingRequests();
 
     // Subscribe to message changes
-    const channel = supabase
+    const messagesChannel = supabase
       .channel('unread-messages')
       .on(
         'postgres_changes',
@@ -27,8 +29,25 @@ const BottomNav = () => {
       )
       .subscribe();
 
+    // Subscribe to friend request changes
+    const requestsChannel = supabase
+      .channel('friend-requests')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'friend_requests'
+        },
+        () => {
+          loadPendingRequests();
+        }
+      )
+      .subscribe();
+
     return () => {
-      supabase.removeChannel(channel);
+      supabase.removeChannel(messagesChannel);
+      supabase.removeChannel(requestsChannel);
     };
   }, []);
 
@@ -49,11 +68,28 @@ const BottomNav = () => {
     }
   };
 
+  const loadPendingRequests = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { count } = await supabase
+        .from('friend_requests')
+        .select('*', { count: 'exact', head: true })
+        .eq('receiver_id', user.id)
+        .eq('status', 'pending');
+
+      setPendingRequestsCount(count || 0);
+    } catch (error) {
+      console.error('Error loading pending requests:', error);
+    }
+  };
+
   const navItems = [
     { path: "/feed", icon: Home, label: "Home" },
     { path: "/discover", icon: Compass, label: "Discover" },
-    { path: "/notifications", icon: Bell, label: "Notifications" },
-    { path: "/chat", icon: MessageCircle, label: "Chat", badge: unreadCount },
+    { path: "/notifications", icon: Bell, label: "Notifications", badge: pendingRequestsCount, showDot: true },
+    { path: "/chat", icon: MessageCircle, label: "Chat", badge: unreadCount, showDot: true },
     { path: "/profile", icon: User, label: "Profile" },
   ];
 
@@ -76,10 +112,8 @@ const BottomNav = () => {
                 <Icon 
                   className={`w-6 h-6 ${isActive ? "fill-primary" : ""}`}
                 />
-                {item.badge && item.badge > 0 && (
-                  <div className="absolute -top-2 -right-2 min-w-[18px] h-[18px] bg-destructive text-destructive-foreground text-[10px] font-bold rounded-full flex items-center justify-center px-1 animate-pulse">
-                    {item.badge > 9 ? '9+' : item.badge}
-                  </div>
+                {item.badge && item.badge > 0 && item.showDot && (
+                  <div className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-destructive rounded-full" />
                 )}
               </div>
               <span className="text-xs font-medium">{item.label}</span>

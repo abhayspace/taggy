@@ -90,7 +90,7 @@ export const PointsDisplay = () => {
   };
 
   return (
-    <div className="flex items-center gap-1">
+    <div className="flex items-center gap-1 px-3 py-1.5 border border-border rounded-full bg-background">
       <Coins className="w-4 h-4 text-foreground" />
       <span className="font-semibold text-sm text-foreground">
         {points.toLocaleString()}
