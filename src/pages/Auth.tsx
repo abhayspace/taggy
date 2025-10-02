@@ -67,7 +67,7 @@ const Auth = () => {
 
     try {
       const { data, error } = await supabase.auth.signInWithPassword({
-        email: `${username}@tagmate.app`,
+        email: `${username}@taggy.app`,
         password,
       });
 
@@ -95,9 +95,9 @@ const Auth = () => {
     setLoading(true);
 
     try {
-      // Sign up with username as email (username@tagmate.app)
+      // Sign up with username as email (username@taggy.app)
       const { data, error } = await supabase.auth.signUp({
-        email: `${username}@tagmate.app`,
+        email: `${username}@taggy.app`,
         password,
         options: {
           data: {
@@ -115,7 +115,7 @@ const Auth = () => {
 
       toast({
         title: "Account created!",
-        description: "Welcome to TagMate!",
+        description: "Welcome to Taggy!",
       });
 
       navigate("/feed");
@@ -144,7 +144,7 @@ const Auth = () => {
       <Card className="relative z-10 w-full max-w-md p-8 bg-card/95 backdrop-blur-xl shadow-glow-primary rounded-3xl border-2 border-primary/20 animate-scale-in max-h-[90vh] overflow-y-auto">
         <div className="text-center mb-8">
           <h1 className="text-4xl font-bold bg-gradient-primary bg-clip-text text-transparent mb-2">
-            TagMate
+            Taggy
           </h1>
           <p className="text-muted-foreground">
             {isLogin ? "Welcome back!" : "Join the community"}
