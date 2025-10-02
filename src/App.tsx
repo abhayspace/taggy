@@ -8,6 +8,7 @@ import Feed from "./pages/Feed";
 import Discover from "./pages/Discover";
 import Chat from "./pages/Chat";
 import Profile from "./pages/Profile";
+import Notifications from "./pages/Notifications";
 import NotFound from "./pages/NotFound";
 import BottomNav from "./components/BottomNav";
 import { useLocation } from "react-router-dom";
@@ -16,7 +17,7 @@ const queryClient = new QueryClient();
 
 const AppLayout = () => {
   const location = useLocation();
-  const showBottomNav = ["/feed", "/discover", "/chat", "/profile"].includes(location.pathname);
+  const showBottomNav = ["/feed", "/discover", "/chat", "/profile", "/notifications"].includes(location.pathname);
 
   return (
     <>
@@ -38,6 +39,7 @@ const App = () => (
           <Route path="/discover" element={<Discover />} />
           <Route path="/chat" element={<Chat />} />
           <Route path="/profile" element={<Profile />} />
+          <Route path="/notifications" element={<Notifications />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>

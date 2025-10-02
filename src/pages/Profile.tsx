@@ -24,6 +24,7 @@ const Profile = () => {
   const [activeTab, setActiveTab] = useState<"posts" | "tagged">("posts");
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
+  const [friendsCount, setFriendsCount] = useState(0);
 
   useEffect(() => {
     loadProfile();
@@ -39,6 +40,26 @@ const Profile = () => {
 
     return () => subscription.unsubscribe();
   }, [navigate]);
+
+  useEffect(() => {
+    loadFriendsCount();
+  }, [profile]);
+
+  const loadFriendsCount = async () => {
+    if (!profile) return;
+    
+    try {
+      const { count, error } = await supabase
+        .from('friends')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', profile.id);
+
+      if (error) throw error;
+      setFriendsCount(count || 0);
+    } catch (error: any) {
+      console.error('Error loading friends count:', error);
+    }
+  };
 
   const loadProfile = async () => {
     try {
@@ -92,7 +113,7 @@ const Profile = () => {
 
   const stats = {
     posts: 0,
-    friends: 0,
+    friends: friendsCount,
     stories: 0,
   };
 

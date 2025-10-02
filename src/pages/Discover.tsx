@@ -1,151 +1,287 @@
-import { useState } from "react";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Button } from "@/components/ui/button";
+import { useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Search, UserPlus, Users } from "lucide-react";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
+import { Search, UserPlus, UserCheck, Loader2 } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
+import { useNavigate } from "react-router-dom";
 import defaultAvatar from "@/assets/default-avatar.png";
 
-const suggestedUsers = [
-  {
-    id: 1,
-    username: "jessica_art",
-    avatar: defaultAvatar,
-    bio: "Digital artist & designer",
-    interests: ["art", "design", "photography"],
-    mutualFriends: 5,
-  },
-  {
-    id: 2,
-    username: "tom_gamer",
-    avatar: defaultAvatar,
-    bio: "Pro gamer | Streaming daily",
-    interests: ["gaming", "technology", "esports"],
-    mutualFriends: 3,
-  },
-  {
-    id: 3,
-    username: "lisa_music",
-    avatar: defaultAvatar,
-    bio: "Music lover 🎵 Guitarist",
-    interests: ["music", "guitar", "concerts"],
-    mutualFriends: 8,
-  },
-  {
-    id: 4,
-    username: "david_sport",
-    avatar: defaultAvatar,
-    bio: "Basketball enthusiast",
-    interests: ["sports", "basketball", "fitness"],
-    mutualFriends: 2,
-  },
-];
+interface Profile {
+  id: string;
+  username: string;
+  bio: string | null;
+  age: number | null;
+  profile_picture_url: string | null;
+  interests: string[] | null;
+}
+
+interface FriendRequest {
+  id: string;
+  status: string;
+}
 
 const Discover = () => {
-  const [addedFriends, setAddedFriends] = useState<number[]>([]);
+  const { toast } = useToast();
+  const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState("");
+  const [users, setUsers] = useState<Profile[]>([]);
+  const [friendRequests, setFriendRequests] = useState<Record<string, FriendRequest>>({});
+  const [friends, setFriends] = useState<Set<string>>(new Set());
+  const [loading, setLoading] = useState(true);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
 
-  const handleAddFriend = (userId: number) => {
-    setAddedFriends((prev) =>
-      prev.includes(userId)
-        ? prev.filter((id) => id !== userId)
-        : [...prev, userId]
-    );
+  useEffect(() => {
+    loadData();
+  }, []);
+
+  const loadData = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (!user) {
+        navigate('/');
+        return;
+      }
+
+      setCurrentUserId(user.id);
+
+      // Load all profiles except current user
+      const { data: profiles, error: profilesError } = await supabase
+        .from('profiles')
+        .select('*')
+        .neq('id', user.id);
+
+      if (profilesError) throw profilesError;
+      setUsers(profiles || []);
+
+      // Load friend requests
+      const { data: requests, error: requestsError } = await supabase
+        .from('friend_requests')
+        .select('*')
+        .eq('sender_id', user.id)
+        .in('status', ['pending', 'accepted']);
+
+      if (requestsError) throw requestsError;
+      
+      const requestsMap: Record<string, FriendRequest> = {};
+      requests?.forEach(req => {
+        requestsMap[req.receiver_id] = { id: req.id, status: req.status };
+      });
+      setFriendRequests(requestsMap);
+
+      // Load friends
+      const { data: friendsData, error: friendsError } = await supabase
+        .from('friends')
+        .select('friend_id')
+        .eq('user_id', user.id);
+
+      if (friendsError) throw friendsError;
+      
+      const friendsSet = new Set(friendsData?.map(f => f.friend_id) || []);
+      setFriends(friendsSet);
+
+    } catch (error: any) {
+      toast({
+        title: "Error loading users",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const filteredUsers = suggestedUsers.filter(user =>
+  const sendFriendRequest = async (receiverId: string) => {
+    if (!currentUserId) return;
+
+    try {
+      const { data, error } = await supabase
+        .from('friend_requests')
+        .insert({
+          sender_id: currentUserId,
+          receiver_id: receiverId,
+          status: 'pending'
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      setFriendRequests({
+        ...friendRequests,
+        [receiverId]: { id: data.id, status: 'pending' }
+      });
+
+      toast({
+        title: "Friend request sent!",
+        description: "Waiting for them to accept.",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Error sending request",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  };
+
+  const cancelFriendRequest = async (receiverId: string) => {
+    const request = friendRequests[receiverId];
+    if (!request) return;
+
+    try {
+      const { error } = await supabase
+        .from('friend_requests')
+        .delete()
+        .eq('id', request.id);
+
+      if (error) throw error;
+
+      const newRequests = { ...friendRequests };
+      delete newRequests[receiverId];
+      setFriendRequests(newRequests);
+
+      toast({
+        title: "Request cancelled",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Error cancelling request",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  };
+
+  const filteredUsers = users.filter((user) =>
     user.username.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    user.bio.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    user.interests.some(interest => interest.toLowerCase().includes(searchQuery.toLowerCase()))
+    user.bio?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    user.interests?.some(i => i.toLowerCase().includes(searchQuery.toLowerCase()))
   );
 
-  return (
-    <div className="h-full flex flex-col pb-20">
-      {/* Header */}
-      <div className="bg-gradient-secondary p-6 rounded-b-3xl">
-        <h1 className="text-3xl font-bold text-secondary-foreground mb-2 flex items-center gap-2">
-          <Users className="w-8 h-8" />
-          Discover
-        </h1>
-        <p className="text-secondary-foreground/80">Find friends who share your interests</p>
+  if (loading) {
+    return (
+      <div className="h-screen flex items-center justify-center pb-20">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
       </div>
+    );
+  }
 
-      {/* Search Bar */}
-      <div className="p-4">
+  return (
+    <div className="min-h-screen pb-20 bg-background">
+      <div className="p-6 space-y-6">
+        {/* Header */}
+        <div className="space-y-2">
+          <h1 className="text-3xl font-bold bg-gradient-primary bg-clip-text text-transparent">
+            Discover
+          </h1>
+          <p className="text-muted-foreground">Find friends who share your interests</p>
+        </div>
+
+        {/* Search */}
         <div className="relative">
           <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
           <Input
             type="text"
-            placeholder="Search by username or interests..."
+            placeholder="Search users by name or interests..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-12 h-12 rounded-2xl bg-card"
+            className="pl-12 h-12 rounded-full bg-card/50 border-2 border-primary/20 focus:border-primary transition-all"
           />
         </div>
-      </div>
 
-      {/* Suggested Users */}
-      <div className="flex-1 overflow-auto px-4 pb-4 space-y-4">
-        {filteredUsers.map((user) => (
-          <Card 
-            key={user.id} 
-            className="p-4 rounded-3xl hover:shadow-glow-primary transition-all animate-fade-in"
-          >
-            <div className="flex items-start gap-4">
-              <Avatar className="w-16 h-16 border-2 border-primary/20">
-                <AvatarImage src={user.avatar} />
-                <AvatarFallback>{user.username[0].toUpperCase()}</AvatarFallback>
-              </Avatar>
+        {/* Users List */}
+        <div className="space-y-4">
+          {filteredUsers.length === 0 ? (
+            <Card className="p-8 text-center rounded-2xl bg-card/50">
+              <p className="text-muted-foreground">No users found</p>
+            </Card>
+          ) : (
+            filteredUsers.map((user) => {
+              const isFriend = friends.has(user.id);
+              const request = friendRequests[user.id];
+              const hasPendingRequest = request?.status === 'pending';
 
-              <div className="flex-1 min-w-0">
-                <h3 className="font-semibold text-lg">{user.username}</h3>
-                <p className="text-sm text-muted-foreground mb-2">{user.bio}</p>
-                
-                <div className="flex flex-wrap gap-2 mb-3">
-                  {user.interests.map((interest) => (
-                    <Badge
-                      key={interest}
-                      variant="secondary"
-                      className="bg-gradient-primary text-primary-foreground rounded-full px-3"
-                    >
-                      {interest}
-                    </Badge>
-                  ))}
-                </div>
+              return (
+                <Card
+                  key={user.id}
+                  className="p-4 rounded-2xl bg-card/50 backdrop-blur-sm hover:shadow-glow-primary transition-all animate-fade-in"
+                >
+                  <div className="flex items-start gap-4">
+                    <Avatar className="w-16 h-16 border-2 border-primary/20">
+                      <AvatarImage src={user.profile_picture_url || defaultAvatar} />
+                      <AvatarFallback className="bg-gradient-primary text-primary-foreground">
+                        {user.username[0].toUpperCase()}
+                      </AvatarFallback>
+                    </Avatar>
 
-                <p className="text-xs text-muted-foreground flex items-center gap-1">
-                  <Users className="w-3 h-3" />
-                  {user.mutualFriends} mutual friends
-                </p>
-              </div>
+                    <div className="flex-1 min-w-0">
+                      <h3 className="font-semibold text-lg mb-1">{user.username}</h3>
+                      {user.age && (
+                        <p className="text-sm text-muted-foreground mb-1">{user.age} years old</p>
+                      )}
+                      {user.bio && (
+                        <p className="text-sm text-muted-foreground mb-2 line-clamp-2">
+                          {user.bio}
+                        </p>
+                      )}
 
-              <Button
-                onClick={() => handleAddFriend(user.id)}
-                className={`rounded-full h-10 px-6 transition-all ${
-                  addedFriends.includes(user.id)
-                    ? "bg-muted text-muted-foreground"
-                    : "bg-gradient-accent shadow-glow-accent hover:scale-105"
-                }`}
-              >
-                {addedFriends.includes(user.id) ? (
-                  "Added"
-                ) : (
-                  <>
-                    <UserPlus className="w-4 h-4 mr-2" />
-                    Add
-                  </>
-                )}
-              </Button>
-            </div>
-          </Card>
-        ))}
+                      {/* Interests */}
+                      {user.interests && user.interests.length > 0 && (
+                        <div className="flex flex-wrap gap-2 mb-3">
+                          {user.interests.slice(0, 3).map((interest) => (
+                            <Badge
+                              key={interest}
+                              className="bg-gradient-accent text-accent-foreground rounded-full text-xs"
+                            >
+                              {interest}
+                            </Badge>
+                          ))}
+                          {user.interests.length > 3 && (
+                            <Badge className="bg-muted text-muted-foreground rounded-full text-xs">
+                              +{user.interests.length - 3}
+                            </Badge>
+                          )}
+                        </div>
+                      )}
 
-        {filteredUsers.length === 0 && (
-          <div className="text-center py-12">
-            <p className="text-muted-foreground">No users found matching your search</p>
-          </div>
-        )}
+                      {/* Action Button */}
+                      {isFriend ? (
+                        <Button
+                          disabled
+                          className="rounded-full bg-gradient-secondary"
+                        >
+                          <UserCheck className="w-4 h-4 mr-2" />
+                          Friends
+                        </Button>
+                      ) : hasPendingRequest ? (
+                        <Button
+                          onClick={() => cancelFriendRequest(user.id)}
+                          variant="outline"
+                          className="rounded-full"
+                        >
+                          Request Sent
+                        </Button>
+                      ) : (
+                        <Button
+                          onClick={() => sendFriendRequest(user.id)}
+                          className="rounded-full bg-gradient-primary hover:scale-105 transition-transform"
+                        >
+                          <UserPlus className="w-4 h-4 mr-2" />
+                          Add Friend
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                </Card>
+              );
+            })
+          )}
+        </div>
       </div>
     </div>
   );
