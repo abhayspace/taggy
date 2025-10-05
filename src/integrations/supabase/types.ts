@@ -577,6 +577,8 @@ export type Database = {
           proposed_at: string
           responded_at: string | null
           secret_code: string | null
+          secret_code_attempts: number | null
+          secret_code_created_at: string | null
           status: string | null
           updated_at: string
           user_id: string
@@ -589,6 +591,8 @@ export type Database = {
           proposed_at?: string
           responded_at?: string | null
           secret_code?: string | null
+          secret_code_attempts?: number | null
+          secret_code_created_at?: string | null
           status?: string | null
           updated_at?: string
           user_id: string
@@ -601,6 +605,8 @@ export type Database = {
           proposed_at?: string
           responded_at?: string | null
           secret_code?: string | null
+          secret_code_attempts?: number | null
+          secret_code_created_at?: string | null
           status?: string | null
           updated_at?: string
           user_id?: string
@@ -812,6 +818,10 @@ export type Database = {
       can_view_post: {
         Args: { _post_user_id: string }
         Returns: boolean
+      }
+      claim_daily_bonus: {
+        Args: Record<PropertyKey, never>
+        Returns: Json
       }
       is_conversation_participant: {
         Args: { _conversation_id: string; _user_id: string }
