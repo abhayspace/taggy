@@ -11,7 +11,6 @@ import defaultAvatar from "@/assets/default-avatar.png";
 import { formatDistanceToNow } from "date-fns";
 import { SendGiftDialog } from "@/components/SendGiftDialog";
 import { useAgoraCalls } from "@/hooks/useAgoraCalls";
-import { IncomingCallPopup } from "@/components/IncomingCallPopup";
 import { CallScreen } from "@/components/CallScreen";
 import { BlockMuteMenu } from "@/components/BlockMuteMenu";
 import {
@@ -618,16 +617,6 @@ const Conversation = () => {
           </Button>
         </div>
       </form>
-      
-      {/* Incoming Call Popup */}
-      {incomingCall && incomingCallUserInfo && (
-        <IncomingCallPopup
-          call={incomingCall}
-          callerInfo={incomingCallUserInfo}
-          onAccept={() => acceptCall(incomingCall)}
-          onReject={() => rejectCall(incomingCall.id)}
-        />
-      )}
 
       {/* Active Call Screen */}
       {activeCall && otherUser && (

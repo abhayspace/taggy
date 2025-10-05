@@ -7,6 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
 import defaultAvatar from "@/assets/default-avatar.png";
+import appIcon from "@/assets/app-icon.jpeg";
 import { AddPostDialog } from "@/components/AddPostDialog";
 import { AddStoryDialog } from "@/components/AddStoryDialog";
 import { PostCommentsDialog } from "@/components/PostCommentsDialog";
@@ -236,9 +237,14 @@ const Feed = () => {
     <div className="h-full flex flex-col pb-20">
       {/* Header with Points */}
       <div className="flex items-center justify-between px-4 py-3 bg-background/80 backdrop-blur-sm sticky top-0 z-20 border-b">
-        <h1 className="text-xl font-bold text-purple-500">
-          Taggy
-        </h1>
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-[20%] overflow-hidden bg-gradient-to-br from-purple-500 to-pink-500 p-[2px]">
+            <img src={appIcon} alt="Taggy" className="w-full h-full object-cover rounded-[18%]" />
+          </div>
+          <h1 className="text-2xl font-bold text-purple-500" style={{ fontFamily: 'Pacifico, cursive' }}>
+            Taggy
+          </h1>
+        </div>
         <PointsDisplay />
       </div>
 
