@@ -11,6 +11,7 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { Loader2, X, Upload } from "lucide-react";
 import heroBg from "@/assets/hero-bg.jpg";
+import { signupSchema, loginSchema } from "@/lib/validationSchemas";
 
 const Auth = () => {
   const navigate = useNavigate();
@@ -67,6 +68,19 @@ const Auth = () => {
     setLoading(true);
 
     try {
+      // Validate login input
+      const validationResult = loginSchema.safeParse({ username, password });
+      if (!validationResult.success) {
+        const firstError = validationResult.error.issues[0];
+        toast({
+          title: "Validation Error",
+          description: firstError.message,
+          variant: "destructive",
+        });
+        setLoading(false);
+        return;
+      }
+
       const { data, error } = await supabase.auth.signInWithPassword({
         email: `${username}@taggy.app`,
         password,
@@ -96,18 +110,40 @@ const Auth = () => {
     setLoading(true);
 
     try {
+      // Validate signup input with Zod
+      const validationResult = signupSchema.safeParse({
+        username,
+        password,
+        displayName,
+        bio: bio || undefined,
+        age: age ? parseInt(age) : undefined,
+        gender,
+        interests: interests.length > 0 ? interests : undefined,
+      });
+
+      if (!validationResult.success) {
+        const firstError = validationResult.error.issues[0];
+        toast({
+          title: "Validation Error",
+          description: firstError.message,
+          variant: "destructive",
+        });
+        setLoading(false);
+        return;
+      }
+
       // Sign up with username as email (username@taggy.app)
       const { data, error } = await supabase.auth.signUp({
         email: `${username}@taggy.app`,
         password,
         options: {
           data: {
-            username,
-            display_name: displayName,
-            bio,
-            age: age ? parseInt(age) : null,
-            gender: gender || null,
-            interests: interests.join(","),
+            username: validationResult.data.username,
+            display_name: validationResult.data.displayName,
+            bio: validationResult.data.bio || null,
+            age: validationResult.data.age || null,
+            gender: validationResult.data.gender,
+            interests: validationResult.data.interests?.join(",") || "",
           },
           emailRedirectTo: `${window.location.origin}/feed`,
         },

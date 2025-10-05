@@ -3,9 +3,10 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Loader2, Copy, Check } from "lucide-react";
+import { Loader2, Copy, Check, AlertCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 interface RelationshipSecretCodeDialogProps {
   open: boolean;
@@ -33,9 +34,14 @@ export const RelationshipSecretCodeDialog = ({
   const [copied, setCopied] = useState(false);
   const { toast } = useToast();
 
-  const generateCode = () => {
-    const code = Math.random().toString(36).substring(2, 8).toUpperCase();
-    setSecretCode(code);
+  const generateSecureCode = () => {
+    // Generate 12-character alphanumeric code (uppercase letters and numbers)
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // Excluding similar-looking chars
+    let code = '';
+    for (let i = 0; i < 12; i++) {
+      code += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    return code;
   };
 
   const handleGenerateCode = async () => {
@@ -43,12 +49,15 @@ export const RelationshipSecretCodeDialog = ({
     
     setLoading(true);
     try {
-      generateCode();
-      const code = Math.random().toString(36).substring(2, 8).toUpperCase();
+      const code = generateSecureCode();
       
       const { error } = await supabase
         .from('relationships')
-        .update({ secret_code: code })
+        .update({ 
+          secret_code: code,
+          secret_code_created_at: new Date().toISOString(),
+          secret_code_attempts: 0
+        })
         .eq('id', relationship.id);
 
       if (error) throw error;
@@ -56,7 +65,7 @@ export const RelationshipSecretCodeDialog = ({
       setSecretCode(code);
       toast({
         title: "Secret code generated",
-        description: "Share this code with your partner to confirm the relationship",
+        description: "Code expires in 48 hours. Share with your partner to confirm.",
       });
       
       onRelationshipUpdated();
@@ -102,13 +111,40 @@ export const RelationshipSecretCodeDialog = ({
         return;
       }
 
+      // Check if code has expired (48 hours)
+      const codeCreatedAt = relationshipData.secret_code_created_at;
+      if (codeCreatedAt) {
+        const createdDate = new Date(codeCreatedAt);
+        const hoursSinceCreated = (Date.now() - createdDate.getTime()) / (1000 * 60 * 60);
+        if (hoursSinceCreated > 48) {
+          toast({
+            title: "Code expired",
+            description: "This secret code has expired. Please ask your partner to generate a new one.",
+            variant: "destructive",
+          });
+          return;
+        }
+      }
+
+      // Check rate limiting (max 5 attempts)
+      if (relationshipData.secret_code_attempts >= 5) {
+        toast({
+          title: "Too many attempts",
+          description: "This code has been locked due to too many failed attempts.",
+          variant: "destructive",
+        });
+        return;
+      }
+
       // Update relationship status to accepted
       const { error: updateError } = await supabase
         .from('relationships')
         .update({ 
           status: 'accepted',
           responded_at: new Date().toISOString(),
-          secret_code: null // Clear the code after use
+          secret_code: null,
+          secret_code_created_at: null,
+          secret_code_attempts: 0
         })
         .eq('id', relationshipData.id);
 
@@ -122,6 +158,26 @@ export const RelationshipSecretCodeDialog = ({
       onOpenChange(false);
       onRelationshipUpdated();
     } catch (error: any) {
+      // Increment attempt counter on error
+      if (enteredCode.trim()) {
+        const { data: relationshipData } = await supabase
+          .from('relationships')
+          .select('secret_code_attempts')
+          .eq('secret_code', enteredCode.toUpperCase())
+          .eq('partner_id', currentUserId)
+          .maybeSingle();
+        
+        if (relationshipData) {
+          await supabase
+            .from('relationships')
+            .update({ 
+              secret_code_attempts: (relationshipData.secret_code_attempts || 0) + 1 
+            })
+            .eq('secret_code', enteredCode.toUpperCase())
+            .eq('partner_id', currentUserId);
+        }
+      }
+
       toast({
         title: "Error confirming relationship",
         description: error.message,
@@ -172,11 +228,17 @@ export const RelationshipSecretCodeDialog = ({
 
           {mode === "generate" ? (
             <div className="space-y-4">
+              <Alert>
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription>
+                  Codes are 12 characters, expire in 48 hours, and have a 5-attempt limit for security.
+                </AlertDescription>
+              </Alert>
               <div className="space-y-2">
                 <Label>Generate a secret code for your partner</Label>
                 {secretCode ? (
                   <div className="flex items-center gap-2">
-                    <Input value={secretCode} readOnly className="font-mono text-lg" />
+                    <Input value={secretCode} readOnly className="font-mono text-base" />
                     <Button
                       type="button"
                       size="icon"
@@ -201,7 +263,7 @@ export const RelationshipSecretCodeDialog = ({
               </div>
               {secretCode && (
                 <p className="text-sm text-muted-foreground">
-                  Share this code with your partner so they can confirm the relationship
+                  Share this code with your partner within 48 hours to confirm the relationship
                 </p>
               )}
             </div>

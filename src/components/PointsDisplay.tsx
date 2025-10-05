@@ -53,36 +53,23 @@ export const PointsDisplay = () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      const { data: userPoints } = await supabase
-        .from('user_points')
-        .select('last_daily_bonus')
-        .eq('user_id', user.id)
-        .single();
+      // Use atomic claim_daily_bonus function to prevent race conditions
+      const { data, error } = await supabase.rpc('claim_daily_bonus');
 
-      const lastBonus = userPoints?.last_daily_bonus;
-      const now = new Date();
-      const lastBonusDate = lastBonus ? new Date(lastBonus) : null;
+      if (error) {
+        console.error('Error claiming daily bonus:', error);
+        return;
+      }
 
-      const shouldGiveBonus = !lastBonusDate || 
-        (now.getTime() - lastBonusDate.getTime()) > 24 * 60 * 60 * 1000;
-
-      if (shouldGiveBonus) {
-        await supabase.rpc('award_points', {
-          _user_id: user.id,
-          _points: 1,
-          _action: 'daily_bonus',
-          _description: 'Daily login bonus'
-        });
-
-        await supabase
-          .from('user_points')
-          .update({ last_daily_bonus: now.toISOString() })
-          .eq('user_id', user.id);
-
+      // Show toast only if bonus was successfully claimed
+      if (data && typeof data === 'object' && 'success' in data && data.success) {
+        const result = data as { success: boolean; points_awarded?: number };
         toast({
           title: "Daily Bonus! 🎉",
-          description: "+1 point for logging in today!",
+          description: `+${result.points_awarded || 10} points for logging in today!`,
         });
+        // Reload points to show updated balance
+        loadPoints();
       }
     } catch (error) {
       console.error('Error checking daily bonus:', error);
